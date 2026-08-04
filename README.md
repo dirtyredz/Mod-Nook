@@ -9,8 +9,8 @@ Build the archive with `.\pack.ps1` → `dist/ModNook-1.0.0.zip`.
 
 ## What it does
 
-Adds **Mod Nook** to the pause menu. It lists every loaded BepInEx plugin that has settings, and
-gives each one a page built from its existing `ConfigEntry` definitions.
+Adds **Mod Nook** to the pause menu. Installed mods run down the left, the selected mod's settings
+fill the right, and every page is built from that mod's existing `ConfigEntry` definitions.
 
 Nothing is required of the mods it configures. Discovery is one-directional: Mod Nook reads other
 plugins' config, and no plugin references this assembly. A mod gets a page by doing what it already
@@ -47,6 +47,7 @@ Every control is the game's own, cloned from a live instance rather than redrawn
 | `enum`, `AcceptableValueList` | `CycleButton` | Settings › Gameplay |
 | bounded number | `SliderButton` | Settings › Video |
 | `KeyboardShortcut`, `KeyCode` | key-capture dialog | — |
+| hex colour `string` | colour picker, palette from `ColorLibrary` | Settings › the game's own colours |
 | comma-separated `string` | list editor | — |
 | anything else | the game's text popup | — |
 

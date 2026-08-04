@@ -306,6 +306,18 @@ namespace ModNook
                 });
         }
 
+        /// <summary>
+        /// Escape always leaves, whatever state the buttons are in - the same guarantee every other
+        /// dialog here makes.
+        /// </summary>
+        private void Update()
+        {
+            if (UnityEngine.Input.GetKeyDown(KeyCode.Escape))
+            {
+                Close();
+            }
+        }
+
         private void Save()
         {
             onSave?.Invoke(string.Join(",", items.ToArray()));

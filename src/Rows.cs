@@ -153,7 +153,7 @@ namespace ModNook
             var buttonStep = isWhole ? 1f : sliderStep;
 
             var row = Templates.Clone(template, parent, $"Row_{entry.Definition.Key}");
-            Templates.SetLabel(row.gameObject, label, labelOnly: true);
+            Templates.SetValueWidgetLabel(row, label);
 
             row.Setup(
                 new SliderButton.Settings
@@ -195,7 +195,7 @@ namespace ModNook
             }
 
             var row = Templates.Clone(template, parent, $"Row_{entry.Definition.Key}");
-            Templates.SetLabel(row.gameObject, label, labelOnly: true);
+            Templates.SetValueWidgetLabel(row, label);
 
             row.Setup(options, currentIndex);
             row.OnValueChanged.AddListener(index =>
@@ -242,6 +242,22 @@ namespace ModNook
             var button = row.AddComponent<Button>();
             button.targetGraphic = plate;
 
+            // Colour before list: a description can mention both, and a hex value is the more
+            // specific match of the two.
+            if (ColorPicker.Suits(entry) && OverlayRoot != null)
+            {
+                button.onClick.AddListener(() =>
+                {
+                    Tooltip.Hide();
+
+                    ColorPicker.Open(
+                        OverlayRoot, entry, ButtonTemplate,
+                        hex => Apply(entry, value, hex, onChanged));
+                });
+
+                return;
+            }
+
             // A comma-separated setting gets the list editor; everything else gets the text popup.
             if (ListEditor.Suits(entry) && OverlayRoot != null)
             {
@@ -251,21 +267,7 @@ namespace ModNook
 
                     ListEditor.Open(
                         OverlayRoot, entry, ButtonTemplate,
-                        joined =>
-                        {
-                            try
-                            {
-                                entry.SetSerializedValue(joined);
-                                value.text = Summarise(entry);
-                                onChanged();
-                            }
-                            catch (Exception e)
-                            {
-                                value.text = Summarise(entry);
-                                ModNookPlugin.Log.LogWarning(
-                                    $"Could not save {entry.Definition.Key}: {e.Message}");
-                            }
-                        });
+                        joined => Apply(entry, value, joined, onChanged));
                 });
 
                 return;
@@ -382,6 +384,27 @@ namespace ModNook
                 field.transform, Summarise(entry), TextAlignmentOptions.Midline, Palette.Muted);
 
             return field;
+        }
+
+        /// <summary>
+        /// Writes a dialog's result back, and shows the old value again if the mod rejects it - so
+        /// the row never claims a change that did not happen.
+        /// </summary>
+        private static void Apply(
+            ConfigEntryBase entry, TextMeshProUGUI value, string serialized, Action onChanged)
+        {
+            try
+            {
+                entry.SetSerializedValue(serialized);
+                value.text = Summarise(entry);
+                onChanged();
+            }
+            catch (Exception e)
+            {
+                value.text = Summarise(entry);
+                ModNookPlugin.Log.LogWarning(
+                    $"Could not save {entry.Definition.Key}: {e.Message}");
+            }
         }
 
         /// <summary>Set by the panel: where dialogs are parented, and what a button looks like.</summary>

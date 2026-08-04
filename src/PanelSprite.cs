@@ -63,6 +63,55 @@ namespace ModNook
             return cached;
         }
 
+        private static Sprite plain;
+
+        /// <summary>
+        /// A white rounded plate, for anything whose colour is set by an Image tint.
+        ///
+        /// <see cref="Get"/> bakes the game's plum and gold into its pixels, and an Image's colour
+        /// multiplies with what is there - so tinting it renders every swatch through a plum filter
+        /// and none of them are the colour they claim. White multiplies to exactly the tint.
+        /// </summary>
+        internal static Sprite Plain()
+        {
+            if (plain != null)
+            {
+                return plain;
+            }
+
+            var texture = new Texture2D(Size, Size, TextureFormat.RGBA32, false)
+            {
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp,
+                name = "ModNook_Plain"
+            };
+
+            var pixels = new Color[Size * Size];
+
+            for (var y = 0; y < Size; y++)
+            {
+                for (var x = 0; x < Size; x++)
+                {
+                    var distance = RoundedRectDistance(x + 0.5f, y + 0.5f);
+
+                    var colour = Color.white;
+                    colour.a = Mathf.Clamp01(0.5f - distance);
+
+                    pixels[y * Size + x] = colour;
+                }
+            }
+
+            texture.SetPixels(pixels);
+            texture.Apply();
+
+            var border = new Vector4(Corner, Corner, Corner, Corner);
+            plain = Sprite.Create(
+                texture, new Rect(0f, 0f, Size, Size), new Vector2(0.5f, 0.5f), 100f, 0,
+                SpriteMeshType.FullRect, border);
+            plain.name = "ModNook_Plain";
+            return plain;
+        }
+
         private static Sprite circle;
 
         /// <summary>

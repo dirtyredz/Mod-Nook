@@ -19,8 +19,16 @@ Every control is cloned from a live instance rather than redrawn:
   bound
 - Confirmation uses the game's own popup, so its buttons are in the player's language
 
+**Layout**
+
+- Mods down the left, the selected mod's settings on the right, both scrolling independently —
+  so comparing two mods costs one click rather than backing out and in again
+
 **Editors for the types a text box handles badly**
 
+- **Colours** — a picker with the game's own palette for one-click choices and RGB sliders for
+  anything else, with a live preview. Clear leaves the setting empty, which is what mods read as
+  "use my default", and the hex format is preserved exactly as it was
 - **Key bindings** — a capture dialog showing the current binding, waiting for a press, with Save
   and Try again. Modifiers are held provisionally, so Alt binds Alt but Ctrl+S binds Ctrl+S
 - **Comma-separated lists** — one row per entry with its own Remove, plus Add. The stored format is

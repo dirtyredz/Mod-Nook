@@ -108,7 +108,7 @@ namespace ModNook
         /// </summary>
         internal static void RequestBack()
         {
-            if (active == null || KeyCapture.IsOpen || ListEditor.IsOpen)
+            if (active == null || KeyCapture.IsOpen || ListEditor.IsOpen || ColorPicker.IsOpen)
             {
                 return;
             }
@@ -141,6 +141,7 @@ namespace ModNook
             // back with the overlay and sit over everything.
             KeyCapture.CloseAny();
             ListEditor.CloseAny();
+            ColorPicker.CloseAny();
             Tooltip.Hide();
 
             // The prompt bar is shared, so ours has to be withdrawn or it stays in the corner of
@@ -166,6 +167,13 @@ namespace ModNook
             try
             {
                 EnsureOverlay();
+
+                // Re-resolved on every open. The pause screen is destroyed and rebuilt across
+                // sessions, so a template captured when the overlay was first built becomes a
+                // destroyed object - and a dialog that checks it for null then renders with no
+                // buttons at all, which is a dialog you cannot leave.
+                Rows.ButtonTemplate = PauseMenu.ButtonTemplate(pauseScreen);
+
                 mods = ModCatalog.Discover();
                 ShowModList();
                 overlay.SetActive(true);
@@ -184,17 +192,21 @@ namespace ModNook
             }
         }
 
+        /// <summary>
+        /// Fills the sidebar and opens the first mod, so the panel never shows an empty right-hand
+        /// side waiting to be told what to display.
+        /// </summary>
         private void ShowModList()
         {
             page = Page.ModList;
             openMod = null;
-            // Names the screen rather than the list under it - the game's header says "Gameplay",
-            // not "Settings". A bare "Mods" over a column of mod names was the redundant version.
             title.text = ModNookPlugin.PluginName;
 
             SetResetVisible(false);
 
             ClearContent();
+            ClearSidebar();
+            modButtons.Clear();
 
             if (mods.Count == 0)
             {
@@ -206,17 +218,59 @@ namespace ModNook
             {
                 AddModButton(mod);
             }
+
+            ShowMod(mods[0]);
         }
+
+        private void ClearSidebar()
+        {
+            for (var i = sidebar.childCount - 1; i >= 0; i--)
+            {
+                Destroy(sidebar.GetChild(i).gameObject);
+            }
+        }
+
+        /// <summary>
+        /// Marks the open mod in the sidebar by lighting the plate behind its row, leaving the
+        /// button itself - and so the game's own hover colour - untouched.
+        /// </summary>
+        private void HighlightSelected()
+        {
+            foreach (var pair in modButtons)
+            {
+                if (pair.Value == null)
+                {
+                    continue;
+                }
+
+                var plate = pair.Value.GetComponent<Image>();
+                if (plate != null)
+                {
+                    plate.enabled = pair.Key == openMod;
+                }
+            }
+        }
+
+        private readonly Dictionary<ModCatalog.ModEntry, GameObject> modButtons =
+            new Dictionary<ModCatalog.ModEntry, GameObject>();
 
         private void ShowMod(ModCatalog.ModEntry mod)
         {
             page = Page.Mod;
             openMod = mod;
-            title.text = string.IsNullOrEmpty(mod.Version) ? mod.Name : $"{mod.Name}  {mod.Version}";
+
+            // The header keeps naming the panel; the mod names itself at the top of its own column,
+            // the way the sidebar layouts we took this from do it.
+            title.text = ModNookPlugin.PluginName;
 
             SetResetVisible(true);
+            HighlightSelected();
 
             ClearContent();
+
+            AddHeading(
+                string.IsNullOrEmpty(mod.Version) ? mod.Name : $"{mod.Name}  {mod.Version}",
+                first: true);
 
             var first = true;
 
@@ -317,14 +371,12 @@ namespace ModNook
             }
         }
 
+        /// <summary>
+        /// With the mods always on screen there is no page to step back to, so cancel closes the
+        /// panel outright.
+        /// </summary>
         private void Back()
         {
-            if (page == Page.Mod)
-            {
-                ShowModList();
-                return;
-            }
-
             Close();
         }
 
@@ -396,7 +448,7 @@ namespace ModNook
                 BuildHeader(panel);
             }
 
-            BuildScrollArea(panel);
+            BuildBody(panel);
             BuildFooter(panel);
         }
 
@@ -761,10 +813,64 @@ namespace ModNook
         /// A mod with nineteen settings does not fit on any screen, so the content area scrolls.
         /// The rows inside it are still native widgets; only the viewport is ours.
         /// </summary>
-        private void BuildScrollArea(RectTransform panel)
+        /// <summary>
+        /// The body: mods down the left, the selected mod's settings on the right.
+        ///
+        /// Replaces a list page that you entered and backed out of. With both on screen the mods
+        /// are always reachable, comparing two of them costs one click instead of three, and the
+        /// header stops changing under you.
+        /// </summary>
+        private void BuildBody(RectTransform panel)
         {
-            var scroll = new GameObject("Scroll", typeof(RectTransform), typeof(ScrollRect));
-            scroll.transform.SetParent(panel, false);
+            var body = new GameObject("Body", typeof(RectTransform), typeof(HorizontalLayoutGroup));
+            body.transform.SetParent(panel, false);
+
+            var layout = body.GetComponent<HorizontalLayoutGroup>();
+            layout.spacing = 24f;
+            layout.childControlWidth = true;
+            layout.childForceExpandWidth = false;
+            layout.childControlHeight = true;
+            layout.childForceExpandHeight = true;
+
+            var element = body.AddComponent<LayoutElement>();
+            element.flexibleHeight = 1f;
+
+            sidebar = BuildScroller(body.transform, "Sidebar", TextAnchor.UpperLeft);
+            var sidebarElement = sidebar.gameObject.GetComponentInParent<ScrollRect>()
+                .gameObject.GetComponent<LayoutElement>();
+            sidebarElement.preferredWidth = SidebarWidth;
+            sidebarElement.minWidth = SidebarWidth;
+            sidebarElement.flexibleWidth = 0f;
+
+            var divider = new GameObject(
+                "Divider", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            divider.transform.SetParent(body.transform, false);
+
+            var dividerImage = divider.GetComponent<Image>();
+            dividerImage.color = new Color(Palette.Muted.r, Palette.Muted.g, Palette.Muted.b, 0.3f);
+            dividerImage.raycastTarget = false;
+
+            var dividerElement = divider.AddComponent<LayoutElement>();
+            dividerElement.preferredWidth = 2f;
+            dividerElement.minWidth = 2f;
+            dividerElement.flexibleWidth = 0f;
+
+            content = BuildScroller(body.transform, "Detail", TextAnchor.UpperCenter);
+            var detailElement = content.gameObject.GetComponentInParent<ScrollRect>()
+                .gameObject.GetComponent<LayoutElement>();
+            detailElement.flexibleWidth = 1f;
+        }
+
+        /// <summary>Width of the mod list. Wide enough for the longest name we ship against.</summary>
+        private const float SidebarWidth = 380f;
+
+        private RectTransform sidebar;
+
+        private RectTransform BuildScroller(
+            Transform parent, string name, TextAnchor alignment)
+        {
+            var scroll = new GameObject(name, typeof(RectTransform), typeof(ScrollRect));
+            scroll.transform.SetParent(parent, false);
 
             var scrollElement = scroll.AddComponent<LayoutElement>();
             scrollElement.flexibleHeight = 1f;
@@ -787,17 +893,17 @@ namespace ModNook
                 "Content", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
             contentObject.transform.SetParent(viewport.transform, false);
 
-            content = (RectTransform)contentObject.transform;
-            content.anchorMin = new Vector2(0f, 1f);
-            content.anchorMax = new Vector2(1f, 1f);
-            content.pivot = new Vector2(0.5f, 1f);
-            content.offsetMin = Vector2.zero;
-            content.offsetMax = Vector2.zero;
+            var scrollContent = (RectTransform)contentObject.transform;
+            scrollContent.anchorMin = new Vector2(0f, 1f);
+            scrollContent.anchorMax = new Vector2(1f, 1f);
+            scrollContent.pivot = new Vector2(0.5f, 1f);
+            scrollContent.offsetMin = Vector2.zero;
+            scrollContent.offsetMax = Vector2.zero;
 
             var layout = contentObject.GetComponent<VerticalLayoutGroup>();
             layout.spacing = 10f;
             layout.padding = new RectOffset(8, 8, 4, 4);
-            layout.childAlignment = TextAnchor.UpperCenter;
+            layout.childAlignment = alignment;
             // Rows are full-width settings rows whose label is anchored left and control right, so
             // they are given the viewport's width and left to place their own contents.
             layout.childControlWidth = true;
@@ -814,11 +920,13 @@ namespace ModNook
 
             var rect = scroll.GetComponent<ScrollRect>();
             rect.viewport = (RectTransform)viewport.transform;
-            rect.content = content;
+            rect.content = scrollContent;
             rect.horizontal = false;
             rect.vertical = true;
             rect.movementType = ScrollRect.MovementType.Clamped;
             rect.scrollSensitivity = 40f;
+
+            return scrollContent;
         }
 
         // ------------------------------------------------------------------ content
@@ -839,9 +947,54 @@ namespace ModNook
                 return;
             }
 
-            Templates.CloneButton(
-                template, content, $"ModNook_Mod_{mod.Guid}",
-                $"{mod.Name}  ({mod.SettingCount})", () => ShowMod(mod), 68f);
+            // A row that owns the highlight, with the button living inside it. Selection used to be
+            // a colour, which meant taking the label's colour away from the game - and that took
+            // the orange hover with it. A plate behind the row says the same thing without touching
+            // anything the button does.
+            var row = new GameObject(
+                $"ModRow_{mod.Guid}",
+                typeof(RectTransform), typeof(CanvasRenderer), typeof(Image),
+                typeof(HorizontalLayoutGroup));
+            row.transform.SetParent(sidebar, false);
+
+            var plate = row.GetComponent<Image>();
+            plate.sprite = PanelSprite.Get();
+            plate.type = Image.Type.Sliced;
+            plate.color = new Color32(0x6B, 0x3F, 0xA8, 0xC0);
+            plate.enabled = false;
+            plate.raycastTarget = false;
+
+            var rowLayout = row.GetComponent<HorizontalLayoutGroup>();
+            rowLayout.childControlWidth = true;
+            rowLayout.childForceExpandWidth = true;
+            rowLayout.childControlHeight = true;
+            rowLayout.childForceExpandHeight = true;
+
+            var rowElement = row.AddComponent<LayoutElement>();
+            rowElement.preferredHeight = 68f;
+            rowElement.minHeight = 68f;
+
+            var button = Templates.CloneButton(
+                template, row.transform, $"ModNook_Mod_{mod.Guid}", mod.Name,
+                () => ShowMod(mod), 68f);
+
+            // The label is centred by the button's own layout group, so setting the text's alignment
+            // alone does nothing - the group has to be told to start from the left as well.
+            var buttonLayout = button.GetComponent<HorizontalLayoutGroup>();
+            if (buttonLayout != null)
+            {
+                buttonLayout.childAlignment = TextAnchor.MiddleLeft;
+                buttonLayout.childControlWidth = true;
+                buttonLayout.childForceExpandWidth = true;
+                buttonLayout.padding = new RectOffset(24, 12, 0, 0);
+            }
+
+            foreach (var text in button.GetComponentsInChildren<TextMeshProUGUI>(true))
+            {
+                text.alignment = TextAlignmentOptions.MidlineLeft;
+            }
+
+            modButtons[mod] = row;
         }
 
         /// <summary>

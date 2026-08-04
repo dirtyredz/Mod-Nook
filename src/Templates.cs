@@ -192,9 +192,13 @@ namespace ModNook
         /// </summary>
         internal static AnimatedButton CloneButton(
             AnimatedButton template, Transform parent, string name, string label, Action onClick,
-            float height = 64f, bool keepWings = false)
+            float height = 64f, bool keepWings = false, Action<GameObject> prepare = null)
         {
             var button = CloneInactive(template, name);
+
+            // Runs while the clone is still staged, which is the only point at which components can
+            // be removed before their Awake caches anything.
+            prepare?.Invoke(button.gameObject);
 
             // Destroyed rather than disabled: a plain button has no value text depending on it.
             StripLocalization(button.gameObject, destroy: true);
@@ -294,6 +298,43 @@ namespace ModNook
                 root.AddComponent<BatWingFitter>();
             }
         }
+
+        /// <summary>
+        /// Hands control of a clone's text colour to us.
+        ///
+        /// The game drives a button's label colour through <c>UIColorable</c>, which reasserts its
+        /// own colour on hover and selection. Anything we set is correct until the pointer crosses
+        /// it - so a greyed-out row lights back up on hover as though it were selected. Disabling
+        /// the component leaves the colour where we put it; the button still animates, so there is
+        /// still feedback.
+        /// </summary>
+        internal static void FreezeColours(GameObject root)
+        {
+            // Cut the driver's references first. SelectableWidget keeps arrays of the things it
+            // recolours on hover and select, and calls straight into them - so disabling a
+            // UIColorable changes nothing, exactly as disabling LocalizedTextField did not stop it
+            // rewriting its own text.
+            foreach (var widget in root.GetComponentsInChildren<SelectableWidget>(true))
+            {
+                ColorablesField?.SetValue(widget, new UIColorable[0]);
+                AnimatedComponentsField?.SetValue(widget, new AnimatedComponent[0]);
+            }
+
+            foreach (var colourable in root.GetComponentsInChildren<UIColorable>(true))
+            {
+                UnityEngine.Object.DestroyImmediate(colourable);
+            }
+        }
+
+        private static readonly System.Reflection.FieldInfo ColorablesField =
+            typeof(SelectableWidget).GetField(
+                "colorables",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+
+        private static readonly System.Reflection.FieldInfo AnimatedComponentsField =
+            typeof(SelectableWidget).GetField(
+                "animatedComponents",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
 
         /// <summary>
         /// Stops a row from selecting itself when the pointer passes over it.
@@ -422,6 +463,60 @@ namespace ModNook
             StripLocalization(root);
             RemoveBatWings(root);
             DisableSelectionMarker(root);
+        }
+
+        /// <summary>
+        /// Labels a cloned value widget, finding the label by elimination rather than by position.
+        ///
+        /// <para>
+        /// Taking the first text in the hierarchy is a guess, and on <see cref="SliderButton"/> it
+        /// is the wrong one - so the caption stayed as the template's while our label was written
+        /// over the value. That is why sliders read "Max frame rate" and cycles read "Night
+        /// duration": those are the captions of the widgets they were cloned from.
+        /// </para>
+        /// <para>
+        /// The widget names its own value text in a serialized field, so the label is simply the
+        /// text that is not that. Its localization component is destroyed once identified, since
+        /// nothing of ours writes through it and leaving it alive lets the game put the template's
+        /// caption back.
+        /// </para>
+        /// </summary>
+        internal static void SetValueWidgetLabel(Component widget, string label)
+        {
+            if (widget == null)
+            {
+                return;
+            }
+
+            var field = widget.GetType().GetField(
+                "valueText",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+
+            var valueHost = (field?.GetValue(widget) as Component)?.gameObject;
+
+            foreach (var text in widget.GetComponentsInChildren<TMP_Text>(true))
+            {
+                if (text == null || (valueHost != null && text.gameObject == valueHost))
+                {
+                    continue;
+                }
+
+                text.text = label;
+
+                foreach (var behaviour in text.GetComponents<MonoBehaviour>())
+                {
+                    var name = behaviour == null ? null : behaviour.GetType().FullName;
+                    if (name != null && name.IndexOf("Localiz", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        UnityEngine.Object.DestroyImmediate(behaviour);
+                    }
+                }
+
+                return;
+            }
+
+            ModNookPlugin.Log.LogWarning(
+                $"No label text found on {widget.GetType().Name}; it will keep the template's own.");
         }
 
         /// <summary>
