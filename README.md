@@ -2,8 +2,8 @@
 
 An in-game settings panel for BepInEx mods, built out of the game's own settings widgets.
 
-**Status:** v1.0.0 — packaged and ready to publish, pending the manual checks in
-[RELEASING.md](RELEASING.md).
+**Status:** 🚀 **Published** — v1.0.0 live on Nexus as
+[mod 127](https://www.nexusmods.com/moonlightpeaks/mods/127). See [RELEASING.md](RELEASING.md).
 
 Build the archive with `.\pack.ps1` → `dist/ModNook-1.0.0.zip`.
 
