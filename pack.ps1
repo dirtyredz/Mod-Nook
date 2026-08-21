@@ -26,15 +26,6 @@ $project = Join-Path $modRoot 'src\ModNook.csproj'
 $version = ([xml](Get-Content $project)).Project.PropertyGroup.Version | Where-Object { $_ }
 if (-not $version) { throw "Could not read <Version> from $project" }
 
-# The version is reported to players twice; a mismatch means an archive that lies about what
-# is inside it.
-$pluginSource = Get-Content (Join-Path $modRoot 'src\Plugin.cs') -Raw
-if ($pluginSource -notmatch 'PluginVersion\s*=\s*"([^"]+)"') { throw 'Could not read PluginVersion from Plugin.cs' }
-$pluginVersion = $Matches[1]
-if ($pluginVersion -ne $version) {
-    throw "Version mismatch: csproj says $version, Plugin.cs says $pluginVersion"
-}
-
 Write-Host "Packing Mod Nook $version"
 
 # SkipDeploy keeps a release build from overwriting the copy under test in the game folder.

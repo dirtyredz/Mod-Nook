@@ -20,9 +20,8 @@ Note that is **not** the dev deploy path. `dotnet build` deploys to
 plain `plugins/ModNook/` layout. `pack.ps1` builds with `SkipDeploy=true`, so packaging never
 overwrites the copy under test.
 
-The script reads the version from the csproj and **refuses to pack if `Plugin.cs` disagrees** — the
-two are reported to players separately, and a mismatch means an archive that lies about what is
-inside it.
+The script reads the version from the csproj; `Plugin.cs` derives the same value at build time via
+`ModBuildInfo.Version`, so the archive name and the version the DLL reports can never disagree.
 
 ## No test project, on purpose
 
@@ -41,7 +40,7 @@ Verified for 1.0.0:
 - [x] **Colour** — colour literals confined to `PanelSprite.cs` and `Palette`
 - [x] **Shape** — panels are 9-sliced and rounded; the backdrop, header and corner prompt are the
       game's own objects rather than imitations
-- [x] **Versions agree** — csproj `1.0.0`, `PluginVersion` `1.0.0`
+- [x] **Version set in the csproj** — `Plugin.cs` derives it via `ModBuildInfo.Version`
 - [x] **CHANGELOG** has exactly one entry for this version
 - [x] **Diagnostics off** — `VerboseLogging` defaults to `false`
 - [x] **No dependency in either direction** — nothing references this assembly, and it references
