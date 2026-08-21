@@ -23,7 +23,7 @@ namespace ModNook
         public const string PluginName = "Mod Nook";
         // Keep in step with <Version> in the csproj - pack.ps1 names the archive from that one
         // and BepInEx reports this one. See 12-versioning-and-release.md.
-        public const string PluginVersion = "1.0.0";
+        public const string PluginVersion = ModBuildInfo.Version;
 
         internal static ManualLogSource Log;
 
@@ -49,10 +49,14 @@ namespace ModNook
                 harmony.PatchAll(typeof(PauseScreenHidePatch));
                 harmony.PatchAll(typeof(PauseMenuContinueInputPatch));
 
+                var patched = string.Join(", ",
+                    System.Linq.Enumerable.Select(
+                        harmony.GetPatchedMethods(), m => m.DeclaringType?.Name + "." + m.Name));
+
                 Log.LogInfo(
-                    $"{PluginName} {PluginVersion} loaded. Open the pause menu and choose " +
-                    $"{PluginName}. Settings are read from other mods' own config files; nothing " +
-                    "is written to your save.");
+                    $"{PluginName} {PluginVersion} loaded. Patched: {patched}. " +
+                    $"Open the pause menu and choose {PluginName}. Settings are read from other " +
+                    "mods' own config files; nothing is written to your save.");
             }
             catch (Exception e)
             {
