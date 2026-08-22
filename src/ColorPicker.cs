@@ -180,7 +180,7 @@ namespace ModNook
 
             Step("read", ReadCurrent);
 
-            Step("title", () => Text(panel.transform, Rows.LabelOf(entry), 34f, Palette.Label));
+            Step("title", () => Text(panel.transform, SettingMetadata.Label(entry), 34f, Palette.Label));
             Step("preview", () => BuildPreview(panel.transform));
             Step("palette", () => BuildPalette(panel.transform));
             Step("sliders", () => BuildSliders(panel.transform));

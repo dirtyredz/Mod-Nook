@@ -6,16 +6,19 @@ correctness bug — all are shape or capability.
 
 ## Structural (from the 2026-08-22 review)
 
-Fixed in that review (safe, compile-verified relocations): `Palette` → `src/Palette.cs`,
-`Tags` → `src/Tags.cs`. Everything below was deliberately backlogged as it changes call sites or
-control flow and wants its own reviewed, in-game-tested pass.
+Fixed so far (compile-verified): `Palette` → `src/Palette.cs` and `Tags` → `src/Tags.cs` (relocations,
+2026-08-22); `SettingMetadata` extracted from `Rows.cs` (2026-08-22, see below). The rest changes call
+sites or control flow and wants its own reviewed, in-game-tested pass.
 
-- [ ] **P1 — Split `Rows.cs` (997 lines).** Extract the pure, UI-free metadata parsing
-  (`Label`/`Humanise`/`ExplicitChoices`/`DescriptionChoices`/`SentenceContaining`/`TryRange`/
-  `Summarise`/`IsNumeric`/`IsIntegral`/`NiceStep`) into `SettingMetadata`; extract the text-popup
-  borrow/restore dance (`Prompt`/`Edit`/`HidePrefix`/`SuspendOverlay`/`RestoreOn`) into
-  `TextPopupDialog`. Keep the widget dispatch (`Build`/`BuildBool`/…) in `Rows`. Lowest-risk win:
-  `SettingMetadata` (no UI, no shared state).
+- [x] **P1 — Extract `SettingMetadata` from `Rows.cs`.** _Done 2026-08-22._ Moved the pure, UI-free
+  metadata parsing (`Label`/`Humanise`/`ExplicitChoices`/`DescriptionChoices`/`SentenceContaining`/
+  `TryRange`/`Summarise`/`IsNumeric`/`IsIntegral`/`NiceStep`) into `src/SettingMetadata.cs`; the three
+  dialog call sites now use `SettingMetadata.Label` instead of `Rows.LabelOf`. Brought `Rows.cs` from
+  997 → 729 lines, under the God-file cap. Build verified.
+- [ ] **P1 — Extract `TextPopupDialog` from `Rows.cs`.** The remaining non-dispatch concern: the
+  game-text-popup borrow/restore dance (`Prompt`/`Edit`/`Brief`/`HidePrefix`/`SuspendOverlay`/
+  `RestoreOn`/`PrefixField`) plus the `OverlayGroup` suspension. Keep the widget dispatch
+  (`Build`/`BuildBool`/…) in `Rows`. Pairs naturally with the overlay-context work below.
 - [ ] **P1 — Replace the `Rows` static back-channel.** `OverlayRoot`/`OverlayGroup`/`ButtonTemplate`
   are public mutable statics set by `PanelController` and read across row/dialog code; `Confirm`
   reaches straight into `Rows.OverlayGroup`. Thread an explicit `OverlayContext`/`PanelUiContext`

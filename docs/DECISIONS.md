@@ -3,6 +3,17 @@
 Decisions worth not re-litigating. Newest first. Rationale is drawn from the code, README, and git
 history; where a rationale is inferred rather than recorded, it says so.
 
+## 2026-08-22 — Extract `SettingMetadata` from `Rows`
+
+Moved the pure, UI-free config-metadata reading (label / humanise / explicit & prose choices / range /
+summary / slider step) out of `Rows.cs` into `SettingMetadata.cs`. **Why:** `Rows` was a God-file (997
+lines) conflating widget construction with metadata interpretation; the parsing touches no
+`GameObject`/`Transform`, so it's the cleanest seam. The move brought `Rows` to 729 lines — under the
+800-line cap — with no behaviour change (Release build verified). Dialogs now call
+`SettingMetadata.Label` directly instead of the removed `Rows.LabelOf`. **Rejected:** splitting the
+text-popup plumbing in the same pass (deferred so each extraction is independently reviewable); a
+per-setting-type strategy/registry (premature for a 6-branch dispatch).
+
 ## 2026-08-22 — Two safe structural extractions; the rest backlogged
 
 Moved `Palette` (out of `Rows.cs`) and `Tags` (out of `ModCatalog.cs`) into their own files.
