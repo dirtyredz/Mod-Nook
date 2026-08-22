@@ -280,7 +280,7 @@ namespace ModNook
 
         private void Add()
         {
-            Rows.Prompt(
+            TextPopupDialog.Prompt(
                 $"Add to {SettingMetadata.Label(entry)}", "One entry. Commas are added for you.",
                 string.Empty, group,
                 typed =>

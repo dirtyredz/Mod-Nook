@@ -3,6 +3,17 @@
 Decisions worth not re-litigating. Newest first. Rationale is drawn from the code, README, and git
 history; where a rationale is inferred rather than recorded, it says so.
 
+## 2026-08-22 — Extract `TextPopupDialog` from `Rows`
+
+Moved the game-text-popup borrow/restore plumbing (`Prompt`/`Edit`/`Brief`/`HidePrefix`/
+`SuspendOverlay`/`RestoreOn`/`TextPopup`) out of `Rows.cs` into `TextPopupDialog.cs`, completing the
+`Rows` responsibility split (997 → 559 lines; now widget-dispatch + row-chassis only). **Why:** opening
+and taming the game's `TextInputPopupScreen` is a self-contained concern distinct from building rows.
+**Rejected:** moving the shared overlay statics (`OverlayRoot`/`OverlayGroup`/`ButtonTemplate`) in the
+same pass — they're used by the colour/key/list paths too, so relocating them is the separate
+overlay-context change. `TextPopupDialog` therefore still reads `Rows.OverlayGroup` for now, a coupling
+noted in the backlog. No behaviour change; Release build verified.
+
 ## 2026-08-22 — Extract `SettingMetadata` from `Rows`
 
 Moved the pure, UI-free config-metadata reading (label / humanise / explicit & prose choices / range /

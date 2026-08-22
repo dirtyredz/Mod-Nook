@@ -38,10 +38,10 @@ PanelController  (the panel: overlay + sidebar + page)
 |---|---|---|---|---|
 | **Entry & patches** | `Plugin.cs` | `ModNookPlugin` binds its own config and installs 3 Harmony patches; the patch classes forward OnShow/OnHide/cancel to `PanelController`. | PanelController | Add a patch / config entry here |
 | **Panel** ⚠️ | `PanelController.cs` (1133) | MonoBehaviour on the PauseScreen. Navigation state machine (open/close/back/show-mod/reset/persist) **+** one-time overlay & chrome construction **+** per-mod content rendering. God-file — see debt. | Rows, ModCatalog, PauseMenu, Templates, InputPrompt, Tooltip, Confirm, PanelSprite, all dialogs | Panel layout / navigation |
-| **Row factory** | `Rows.cs` (729) | Maps one `ConfigEntryBase` → the native widget for its type and binds it back **+** routes text settings to dialogs **+** borrows/restores the game text popup **+** builds the info icon. | Templates, dialogs, Tooltip, PanelSprite, GameFonts, SettingMetadata, Tags, Palette | Add a setting-type → widget mapping |
+| **Row factory** | `Rows.cs` (559) | Maps one `ConfigEntryBase` → the native widget for its type and binds it back **+** routes text settings to the right editor (colour/list/key/text popup) **+** builds the info icon. Also holds the panel-set overlay statics (`OverlayRoot`/`OverlayGroup`/`ButtonTemplate`). | Templates, dialogs, TextPopupDialog, SettingMetadata, Tooltip, PanelSprite, GameFonts, Tags, Palette | Add a setting-type → widget mapping |
 | **Setting metadata** | `SettingMetadata.cs` (275) | Pure, UI-free reading of a `ConfigEntryBase`: label (camel-case humanise + `ModNook.Label`), explicit/prose choices, numeric range, display summary, slider step. No UI, no shared state — reusable by rows and dialogs. | Tags | Label / choice / range rules |
 | **Modal dialogs** | `ColorPicker.cs` (596), `KeyCapture.cs` (343), `ListEditor.cs` (354) | Custom full-screen singleton dialogs (hex colour, key binding, comma-list). Each: `static open`, `Open`/`CloseAny`, build dim+panel, Save/Close. | Templates, PanelSprite, GameFonts, Palette, Rows (label/overlay) | A new editor kind |
-| **Native popup adapter** | `Confirm.cs` (92), `PopupEscape.cs` (52) | `Confirm` drives the game's `GenericPopupScreen` for reset; `PopupEscape` arms Escape on the text popup. Distinct shape from the custom dialogs. | Rows.OverlayGroup, game screens | — |
+| **Native popup adapters** | `TextPopupDialog.cs` (192), `Confirm.cs` (92), `PopupEscape.cs` (52) | `TextPopupDialog` opens the game's `TextInputPopupScreen` for free-form/text settings, borrowing and restoring the overlay's raycast blocker and the popup's "Name:" prefix; `Confirm` drives `GenericPopupScreen` for reset; `PopupEscape` arms Escape on the popup. Distinct shape from the custom build-your-own dialogs. | Rows.OverlayGroup, SettingMetadata, game screens | Text-popup borrow/restore |
 | **Widget templating** | `Templates.cs` (546), `BatWingFitter.cs` (89) | Find & cache the game's Cycle/Slider/Toggle/Button templates; clone; sanitize a clone (strip localization/decorations/hover-select/colour-freeze/bat-wings); relabel. `BatWingFitter` repositions wing ornaments a frame after layout. | game UI assemblies | Adjust how cloned widgets are tamed |
 | **Pause-menu integration** | `PauseMenu.cs` (280) | Source the pause button template, add ours, grow the pause panel to fit — plus a `VerboseLogging` hierarchy dump. | game PauseScreen | Button placement / fit |
 | **Catalog** | `ModCatalog.cs` (170), `Tags.cs` (46) | Discover loaded plugins that expose settings; group into `ModEntry`/`SectionEntry`; honour `ModNook.Hidden`. `Tags` reads the optional `ModNook.*` description tags. | BepInEx Chainloader | Discovery / tag vocabulary |
@@ -83,11 +83,11 @@ Documented by the full review of 2026-08-22 (componentization + abstraction lens
 Two safe relocations were fixed then (`Palette`, `Tags` → own files); the rest is backlogged in
 [docs/BACKLOG.md](docs/BACKLOG.md). None is a correctness bug; all are shape.
 
-- **P1 · `Rows.cs` responsibility split — partly done.** The pure, UI-free metadata parsing
-  (`Label`/`Humanise`/`ExplicitChoices`/`DescriptionChoices`/`TryRange`/`Summarise`/`NiceStep`) was
-  extracted to `SettingMetadata.cs` on 2026-08-22, which brought `Rows.cs` under the 800-line cap
-  (997 → 729). **Remaining:** the text-popup borrow/restore dance (`Prompt`/`Edit`/`HidePrefix`/
-  `SuspendOverlay`/`RestoreOn`) still lives in `Rows` and wants a `TextPopupDialog`. *(backlog)*
+- **P1 · `Rows.cs` responsibility split — done (2026-08-22).** Extracted the pure metadata parsing
+  → `SettingMetadata.cs` and the game-text-popup borrow/restore dance
+  (`Prompt`/`Edit`/`Brief`/`HidePrefix`/`SuspendOverlay`/`RestoreOn`) → `TextPopupDialog.cs`. `Rows.cs`
+  went 997 → 559 lines and is now a focused widget-dispatch + row-chassis class. One coupling remains:
+  `TextPopupDialog` and `Confirm` still read `Rows.OverlayGroup` — dissolved by the overlay-context item.
 - **P1 · `Rows.OverlayRoot` / `OverlayGroup` / `ButtonTemplate` are a leaky back-channel** — public
   mutable statics set by `PanelController`, read deep in row/dialog code; `Confirm` reaches straight
   into `Rows.OverlayGroup`. Wants an explicit `OverlayContext`/`PanelUiContext` threaded in. *(backlog)*
