@@ -426,6 +426,7 @@ namespace ModNook
                     SliderStep = 1f,
                     ButtonStep = 1f,
                     ShowValueAsPercentage = false,
+                    MaxValueTextOverride = new SinglelineLocalizedText(),
                 },
                 Channel(index));
 

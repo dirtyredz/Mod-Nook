@@ -108,10 +108,17 @@ namespace ModNook
         /// </summary>
         internal static void RequestBack()
         {
-            if (active == null || KeyCapture.IsOpen || ListEditor.IsOpen || ColorPicker.IsOpen)
+            if (active == null)
             {
                 return;
             }
+
+            // When a dialog is open, cancel closes it rather than stepping the panel back.
+            // This lets gamepad cancel (B on Steam Deck) dismiss these dialogs, since they
+            // have no physical Escape key.
+            if (KeyCapture.IsOpen) { KeyCapture.CloseAny(); return; }
+            if (ListEditor.IsOpen) { ListEditor.CloseAny(); return; }
+            if (ColorPicker.IsOpen) { ColorPicker.CloseAny(); return; }
 
             active.Back();
         }
@@ -405,8 +412,14 @@ namespace ModNook
                 return;
             }
 
-            var canvas = pauseScreen.GetComponentInParent<Canvas>();
+            // includeInactive: true is required on Linux/Proton where canvas ancestors may still
+            // be inactive when OnShow fires, causing a null return and wrong overlay parenting.
+            var canvas = pauseScreen.GetComponentInParent<Canvas>(true);
             var parent = canvas != null ? canvas.transform : pauseScreen.transform;
+
+            ModNookPlugin.Log.LogInfo(canvas != null
+                ? $"Overlay parented to canvas '{canvas.name}' sortOrder={canvas.sortingOrder}"
+                : "No canvas found in parent chain; overlay parented to pause screen.");
 
             overlay = new GameObject(
                 "ModNook_Overlay", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
@@ -992,6 +1005,13 @@ namespace ModNook
             foreach (var text in button.GetComponentsInChildren<TextMeshProUGUI>(true))
             {
                 text.alignment = TextAlignmentOptions.MidlineLeft;
+
+                // The template's own text is sized for a short caption like "Settings" and is left
+                // to overflow rather than wrap or clip. A third-party mod's display name routinely
+                // runs longer than the sidebar is wide, and without this it draws straight past the
+                // row's plate and over whatever sits beside it instead of stopping at the edge.
+                text.enableWordWrapping = false;
+                text.overflowMode = TextOverflowModes.Ellipsis;
             }
 
             modButtons[mod] = row;
