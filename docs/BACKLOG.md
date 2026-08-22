@@ -8,10 +8,11 @@ correctness bug — all are shape or capability.
 
 Fixed so far (compile-verified): `Palette` → `src/Palette.cs` and `Tags` → `src/Tags.cs` (relocations);
 `SettingMetadata` and `TextPopupDialog` both extracted from `Rows.cs` — `Rows.cs` is now 559 lines and
-its responsibility split is complete; and the **modal-dialog abstraction + close/back registry**
-(`src/ModalDialog.cs`, the three dialogs now subclass it) (all 2026-08-22, see below). What remains is
-the overlay-context threading and the P2 `PanelController` split. Anything touching dialog/overlay
-control flow wants an in-game play-test on top of the build.
+its responsibility split is complete; the **modal-dialog abstraction + close/back registry**
+(`src/ModalDialog.cs`, the three dialogs now subclass it); and the **overlay-context threading**
+(`src/OverlayContext.cs`, the static back-channel is gone) (all 2026-08-22, see below). What remains
+structurally is the P2 `PanelController` split and the P2 UI-primitive dedupe. Anything touching
+dialog/overlay control flow wants an in-game play-test on top of the build.
 
 - [x] **P1 — Extract `SettingMetadata` from `Rows.cs`.** _Done 2026-08-22._ Moved the pure, UI-free
   metadata parsing (`Label`/`Humanise`/`ExplicitChoices`/`DescriptionChoices`/`SentenceContaining`/
@@ -21,13 +22,14 @@ control flow wants an in-game play-test on top of the build.
 - [x] **P1 — Extract `TextPopupDialog` from `Rows.cs`.** _Done 2026-08-22._ Moved the game-text-popup
   borrow/restore dance (`Prompt`/`Edit`/`Brief`/`HidePrefix`/`SuspendOverlay`/`RestoreOn`/`PrefixField`/
   `TextPopup`) into `src/TextPopupDialog.cs`; `Rows.BuildText` and `ListEditor` call it now. `Rows.cs`
-  is down to 559 lines. The `OverlayGroup` suspension state stays on `Rows` for now (dissolved by the
-  overlay-context item). Build verified — this completes the `Rows.cs` responsibility split.
-- [ ] **P1 — Replace the `Rows` static back-channel.** `OverlayRoot`/`OverlayGroup`/`ButtonTemplate`
-  are public mutable statics set by `PanelController` and read across row/dialog code; `Confirm` and
-  now `TextPopupDialog.SuspendOverlay` both reach into `Rows.OverlayGroup`. Thread an explicit
-  `OverlayContext`/`PanelUiContext` into `Rows.Build`/`BuildText`, `TextPopupDialog`, and `Confirm.Ask`
-  instead — this dissolves the last coupling left by the `TextPopupDialog` extraction.
+  is down to 559 lines. The `OverlayGroup` suspension state was dissolved by the overlay-context item
+  below. Build verified — this completes the `Rows.cs` responsibility split.
+- [x] **P1 — Replace the `Rows` static back-channel.** _Done 2026-08-22; play-tested._ Added
+  `src/OverlayContext.cs` (`Root`/`Group`/`ButtonTemplate`). `PanelController` builds one and threads
+  it into `Rows.Build`/`BuildText`; `Rows` passes `Root`/`ButtonTemplate` on to the dialogs and the
+  overlay `Group` to `TextPopupDialog.Edit`, `ListEditor.Open` and `Confirm.Ask`. The public mutable
+  statics `Rows.OverlayRoot`/`OverlayGroup`/`ButtonTemplate` are deleted — no code reaches back into
+  `Rows` for overlay state. This dissolves the last coupling left by the `TextPopupDialog` extraction.
 - [x] **P1 — Introduce a modal-dialog abstraction.** _Done 2026-08-22._ Added `src/ModalDialog.cs`, an
   `abstract ModalDialog : MonoBehaviour` base that owns the one-at-a-time singleton lifecycle, the
   dim+centered-panel shell (`BuildShell(width, padding, spacing, …)`), Escape-close, and the

@@ -31,6 +31,7 @@ namespace ModNook
 
         private ConfigEntryBase entry;
         private AnimatedButton buttonTemplate;
+        private CanvasGroup overlayGroup;
         private Action<string> onSave;
 
         private Transform itemsHost;
@@ -60,12 +61,13 @@ namespace ModNook
 
         internal static void Open(
             RectTransform parent, ConfigEntryBase entry, AnimatedButton buttonTemplate,
-            Action<string> onSave)
+            CanvasGroup overlayGroup, Action<string> onSave)
         {
             Show<ListEditor>(parent, "ModNook_ListEditor", editor =>
             {
                 editor.entry = entry;
                 editor.buttonTemplate = buttonTemplate;
+                editor.overlayGroup = overlayGroup;
                 editor.onSave = onSave;
             });
         }
@@ -219,7 +221,7 @@ namespace ModNook
         {
             TextPopupDialog.Prompt(
                 $"Add to {SettingMetadata.Label(entry)}", "One entry. Commas are added for you.",
-                string.Empty, Group,
+                string.Empty, overlayGroup, Group,
                 typed =>
                 {
                     var cleaned = typed?.Trim();

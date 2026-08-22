@@ -30,6 +30,7 @@ namespace ModNook
         private GameObject resetButton;
 
         private GameObject overlay;
+        private OverlayContext overlayContext;
         private RectTransform content;
         private TextMeshProUGUI title;
 
@@ -157,9 +158,9 @@ namespace ModNook
                 overlay.SetActive(false);
 
                 // Whatever a dialog borrowed, the panel gets back.
-                if (Rows.OverlayGroup != null)
+                if (overlayContext?.Group != null)
                 {
-                    Rows.OverlayGroup.blocksRaycasts = true;
+                    overlayContext.Group.blocksRaycasts = true;
                 }
             }
         }
@@ -176,7 +177,7 @@ namespace ModNook
                 // sessions, so a template captured when the overlay was first built becomes a
                 // destroyed object - and a dialog that checks it for null then renders with no
                 // buttons at all, which is a dialog you cannot leave.
-                Rows.ButtonTemplate = PauseMenu.ButtonTemplate(pauseScreen);
+                overlayContext.ButtonTemplate = PauseMenu.ButtonTemplate(pauseScreen);
 
                 mods = ModCatalog.Discover();
                 ShowModList();
@@ -299,9 +300,9 @@ namespace ModNook
                         // setting it explains rather than on a line of its own.
                         var host = NewSettingHost();
 
-                        if (!Rows.Build(entry, host, () => Persist(mod)))
+                        if (!Rows.Build(entry, host, () => Persist(mod), overlayContext))
                         {
-                            Rows.BuildText(entry, host, () => Persist(mod));
+                            Rows.BuildText(entry, host, () => Persist(mod), overlayContext);
                         }
 
                         if (ModNookPlugin.ShowDescriptions.Value)
@@ -336,7 +337,8 @@ namespace ModNook
                 return;
             }
 
-            Confirm.Ask($"Reset {mod.Name} to its default settings?", () => Reset(mod));
+            Confirm.Ask(
+                $"Reset {mod.Name} to its default settings?", overlayContext?.Group, () => Reset(mod));
         }
 
         private void Reset(ModCatalog.ModEntry mod)
@@ -438,11 +440,15 @@ namespace ModNook
                 dim.color = new Color(0f, 0f, 0f, 0f);
             }
 
-            // Rows need a handle on this to stand the overlay down while a popup is open, or the
-            // popup opens behind it and nothing, including Escape, reaches it.
-            Rows.OverlayGroup = overlay.AddComponent<CanvasGroup>();
-            Rows.OverlayRoot = (RectTransform)overlay.transform;
-            Rows.ButtonTemplate = PauseMenu.ButtonTemplate(pauseScreen);
+            // The row factory and its dialogs get this context explicitly - parent to draw into, the
+            // overlay's raycast blocker, and the button template - rather than reading it off statics.
+            // The blocker lets a game popup stand the overlay down while it shows, or the popup opens
+            // behind it and nothing, including Escape, reaches it.
+            overlayContext = new OverlayContext(
+                (RectTransform)overlay.transform, overlay.AddComponent<CanvasGroup>())
+            {
+                ButtonTemplate = PauseMenu.ButtonTemplate(pauseScreen),
+            };
 
             // The header goes on the overlay rather than in the panel, and keeps the exact rect it
             // has on the Settings screen. Both are full-screen, so copying its anchors lands it

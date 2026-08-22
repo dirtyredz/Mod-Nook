@@ -24,7 +24,8 @@ namespace ModNook
         /// Builds a row for <paramref name="entry"/> under <paramref name="parent"/>. Returns false
         /// when the type has no widget yet, so the caller can fall back to a read-only line.
         /// </summary>
-        internal static bool Build(ConfigEntryBase entry, Transform parent, Action onChanged)
+        internal static bool Build(
+            ConfigEntryBase entry, Transform parent, Action onChanged, OverlayContext overlay)
         {
             var label = SettingMetadata.Label(entry);
 
@@ -39,7 +40,7 @@ namespace ModNook
             // BepInEx's KeyboardShortcut.
             if (entry.SettingType == typeof(KeyboardShortcut) || entry.SettingType == typeof(KeyCode))
             {
-                return BuildKey(entry, parent, label, onChanged);
+                return BuildKey(entry, parent, label, onChanged, overlay);
             }
 
             if (entry.SettingType.IsEnum)
@@ -227,7 +228,8 @@ namespace ModNook
         /// too rather than being written and breaking on next launch.
         /// </para>
         /// </summary>
-        internal static void BuildText(ConfigEntryBase entry, Transform parent, Action onChanged)
+        internal static void BuildText(
+            ConfigEntryBase entry, Transform parent, Action onChanged, OverlayContext overlay)
         {
             var row = ClickableRow(entry, parent, out var plate, out var value);
 
@@ -243,14 +245,14 @@ namespace ModNook
 
             // Colour before list: a description can mention both, and a hex value is the more
             // specific match of the two.
-            if (ColorPicker.Suits(entry) && OverlayRoot != null)
+            if (ColorPicker.Suits(entry) && overlay?.Root != null)
             {
                 button.onClick.AddListener(() =>
                 {
                     Tooltip.Hide();
 
                     ColorPicker.Open(
-                        OverlayRoot, entry, ButtonTemplate,
+                        overlay.Root, entry, overlay.ButtonTemplate,
                         hex => Apply(entry, value, hex, onChanged));
                 });
 
@@ -258,21 +260,21 @@ namespace ModNook
             }
 
             // A comma-separated setting gets the list editor; everything else gets the text popup.
-            if (ListEditor.Suits(entry) && OverlayRoot != null)
+            if (ListEditor.Suits(entry) && overlay?.Root != null)
             {
                 button.onClick.AddListener(() =>
                 {
                     Tooltip.Hide();
 
                     ListEditor.Open(
-                        OverlayRoot, entry, ButtonTemplate,
+                        overlay.Root, entry, overlay.ButtonTemplate, overlay.Group,
                         joined => Apply(entry, value, joined, onChanged));
                 });
 
                 return;
             }
 
-            button.onClick.AddListener(() => TextPopupDialog.Edit(entry, value, onChanged));
+            button.onClick.AddListener(() => TextPopupDialog.Edit(entry, value, overlay?.Group, onChanged));
         }
 
         /// <summary>
@@ -280,9 +282,10 @@ namespace ModNook
         /// because the alternative is asking a player to spell "LeftAlt" from memory.
         /// </summary>
         private static bool BuildKey(
-            ConfigEntryBase entry, Transform parent, string label, Action onChanged)
+            ConfigEntryBase entry, Transform parent, string label, Action onChanged,
+            OverlayContext overlay)
         {
-            if (OverlayRoot == null)
+            if (overlay?.Root == null)
             {
                 return false;
             }
@@ -300,7 +303,7 @@ namespace ModNook
                 Tooltip.Hide();
 
                 KeyCapture.Open(
-                    OverlayRoot, entry, ButtonTemplate,
+                    overlay.Root, entry, overlay.ButtonTemplate,
                     shortcut =>
                     {
                         try
@@ -405,17 +408,6 @@ namespace ModNook
                     $"Could not save {entry.Definition.Key}: {e.Message}");
             }
         }
-
-        /// <summary>Set by the panel: where dialogs are parented, and what a button looks like.</summary>
-        internal static RectTransform OverlayRoot;
-
-        internal static AnimatedButton ButtonTemplate;
-
-        /// <summary>
-        /// Set by the panel so rows can get their own overlay out of a popup's way. Rows have no
-        /// other handle on it, and a popup opening behind an opaque overlay is a soft lock.
-        /// </summary>
-        internal static CanvasGroup OverlayGroup;
 
         /// <summary>
         /// A small circled "i" carrying the author's description on hover.

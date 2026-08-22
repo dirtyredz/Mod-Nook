@@ -13,8 +13,8 @@ namespace ModNook
     ///
     /// <para>
     /// Shared so the list editor can reuse the same popup for adding an entry. The overlay's raycast
-    /// blocker is still owned by <see cref="Rows.OverlayGroup"/>; this suspends and restores it, which
-    /// is the one back-reference left until that state moves to an explicit overlay context.
+    /// blocker (its <see cref="OverlayContext.Group"/>) is passed in; this suspends and restores it
+    /// while the popup shows, so no dialog reaches back into the panel for it.
     /// </para>
     /// </summary>
     internal static class TextPopupDialog
@@ -24,8 +24,8 @@ namespace ModNook
         /// Shared so the list editor can use the same dialog for adding an entry.
         /// </summary>
         internal static void Prompt(
-            string title, string description, string initial, CanvasGroup alsoSuspend,
-            Action<string> onConfirm)
+            string title, string description, string initial, CanvasGroup overlayGroup,
+            CanvasGroup alsoSuspend, Action<string> onConfirm)
         {
             var popup = TextPopup;
             if (popup == null)
@@ -38,7 +38,7 @@ namespace ModNook
                 // Our overlay is the canvas's last sibling and blocks raycasts, so the popup opens
                 // behind it - unclickable, and Escape never reaches it either. Stand down until the
                 // popup closes.
-                SuspendOverlay(popup, alsoSuspend);
+                SuspendOverlay(popup, overlayGroup, alsoSuspend);
                 PopupEscape.Arm(popup);
 
                 // The full overload, because the short one fills the field's prefix with the game's
@@ -54,12 +54,15 @@ namespace ModNook
             }
         }
 
-        internal static void Edit(ConfigEntryBase entry, TextMeshProUGUI valueText, Action onChanged)
+        internal static void Edit(
+            ConfigEntryBase entry, TextMeshProUGUI valueText, CanvasGroup overlayGroup,
+            Action onChanged)
         {
             try
             {
                 Prompt(
-                    SettingMetadata.Label(entry), Brief(entry), entry.GetSerializedValue(), null,
+                    SettingMetadata.Label(entry), Brief(entry), entry.GetSerializedValue(),
+                    overlayGroup, null,
                     typed =>
                     {
                         try
@@ -136,14 +139,15 @@ namespace ModNook
             return prefix.gameObject;
         }
 
-        private static void SuspendOverlay(TextInputPopupScreen popup, CanvasGroup also = null)
+        private static void SuspendOverlay(
+            TextInputPopupScreen popup, CanvasGroup overlayGroup, CanvasGroup also = null)
         {
             var prefix = HidePrefix(popup);
             Tooltip.Hide();
 
-            if (Rows.OverlayGroup != null)
+            if (overlayGroup != null)
             {
-                Rows.OverlayGroup.blocksRaycasts = false;
+                overlayGroup.blocksRaycasts = false;
             }
 
             // A dialog stacked on top of the overlay has its own blocker, which would swallow the
@@ -153,7 +157,7 @@ namespace ModNook
                 also.blocksRaycasts = false;
             }
 
-            RestoreOn(popup, prefix, Rows.OverlayGroup, also);
+            RestoreOn(popup, prefix, overlayGroup, also);
         }
 
         /// <summary>

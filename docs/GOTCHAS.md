@@ -45,8 +45,9 @@ the game's own live UI; the code comments are the source of truth, this is the i
   of names to keep in sync: a new dialog kind is covered the moment it subclasses `ModalDialog`.
 - **The game text popup opens *behind* our overlay unless the overlay stands down.** → The overlay is
   the canvas's last sibling and blocks raycasts, so the popup is unclickable and Escape never reaches
-  it. → `SuspendOverlay` drops `OverlayGroup.blocksRaycasts` (and the dialog's own blocker) and
-  restores it on the popup's `OnScreenHide` (covers Escape/cancel, not just confirm).
+  it. → `SuspendOverlay` drops the overlay group's `blocksRaycasts` (the `CanvasGroup` is passed in
+  via `OverlayContext`, no longer read off a `Rows` static) plus the dialog's own blocker, and restores
+  both on the popup's `OnScreenHide` (covers Escape/cancel, not just confirm).
 - **Custom dialogs (key/colour/list) deliberately do *not* juggle `blocksRaycasts`.** → They're
   children of the overlay, so standing the overlay down would kill their own raycasts and clicks fall
   through to the pause menu. → Each carries its own full-screen blocker instead.

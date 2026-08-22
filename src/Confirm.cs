@@ -13,7 +13,7 @@ namespace ModNook
     /// </summary>
     internal static class Confirm
     {
-        internal static void Ask(string question, Action onConfirm)
+        internal static void Ask(string question, CanvasGroup overlayGroup, Action onConfirm)
         {
             var popup = Find<GenericPopupScreen>();
             if (popup == null)
@@ -29,7 +29,7 @@ namespace ModNook
             {
                 // The popup lives on another canvas and our overlay blocks raycasts, so without
                 // standing down it opens behind an opaque layer with no way to answer it.
-                var group = Rows.OverlayGroup;
+                var group = overlayGroup;
                 if (group != null)
                 {
                     group.blocksRaycasts = false;

@@ -22,10 +22,12 @@ On top of 1.0.0 in `HEAD` (commit `3f5f65f`, marked WIP) — do **not** publish 
 
 ## 📋 Phase 3 — structural cleanup (no user-facing change)
 
-Pay down the debt recorded in [../STRUCTURE.md](../STRUCTURE.md) / [BACKLOG.md](BACKLOG.md): decompose
-the two God-files, introduce the modal-dialog abstraction + dialog registry, replace the `Rows`
-static back-channel with an explicit overlay context, and dedupe the UI primitives. Sequence so each
-step is independently reviewable and in-game-testable.
+Pay down the debt recorded in [../STRUCTURE.md](../STRUCTURE.md) / [BACKLOG.md](BACKLOG.md), one
+independently reviewable and in-game-testable step at a time. **Done (2026-08-22):** the `Rows.cs`
+responsibility split (`SettingMetadata` + `TextPopupDialog`), the modal-dialog abstraction + close/back
+registry (`ModalDialog`), and the overlay-context threading (`OverlayContext`, static back-channel
+removed). **Remaining:** coarse-split the `PanelController` God-file (`PanelChrome`) and dedupe the UI
+primitives (`UiText`/`Stretch`).
 
 ## 📋 Phase 4 — capability gaps (author-facing)
 

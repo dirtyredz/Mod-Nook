@@ -3,6 +3,19 @@
 Decisions worth not re-litigating. Newest first. Rationale is drawn from the code, README, and git
 history; where a rationale is inferred rather than recorded, it says so.
 
+## 2026-08-22 — Thread an explicit `OverlayContext`; drop the `Rows` overlay statics
+
+Replaced the public mutable statics `Rows.OverlayRoot`/`OverlayGroup`/`ButtonTemplate` with a small
+`OverlayContext` (`src/OverlayContext.cs`) that `PanelController` builds once per overlay and threads
+into `Rows.Build`/`BuildText`; `Rows` hands `Root`/`ButtonTemplate` to the colour/key/list dialogs and
+the overlay `Group` to `TextPopupDialog`, `ListEditor` and `Confirm.Ask`. **Why:** the statics were a
+back-channel — set in one class, read deep in three others — that hid the panel→dialog dependency and
+left shared mutable state; an explicit parameter makes the dependency visible and removes the coupling.
+**Chosen shape:** thread the context into `Rows` and pass primitives onward, rather than into every
+dialog `Open` — this keeps `ColorPicker`/`KeyCapture` signatures unchanged (only `ListEditor` gained
+the overlay `Group`, which it needs for its add-entry popup). No behaviour change; Release build
+verified and play-tested (colour/key/list dialogs, the text popup, and the reset confirmation).
+
 ## 2026-08-22 — Extract `TextPopupDialog` from `Rows`
 
 Moved the game-text-popup borrow/restore plumbing (`Prompt`/`Edit`/`Brief`/`HidePrefix`/
@@ -11,8 +24,9 @@ Moved the game-text-popup borrow/restore plumbing (`Prompt`/`Edit`/`Brief`/`Hide
 and taming the game's `TextInputPopupScreen` is a self-contained concern distinct from building rows.
 **Rejected:** moving the shared overlay statics (`OverlayRoot`/`OverlayGroup`/`ButtonTemplate`) in the
 same pass — they're used by the colour/key/list paths too, so relocating them is the separate
-overlay-context change. `TextPopupDialog` therefore still reads `Rows.OverlayGroup` for now, a coupling
-noted in the backlog. No behaviour change; Release build verified.
+overlay-context change. `TextPopupDialog` therefore still read `Rows.OverlayGroup` at the time of this
+extraction — a coupling resolved the same day by the overlay-context change above. No behaviour change;
+Release build verified.
 
 ## 2026-08-22 — Extract `SettingMetadata` from `Rows`
 
