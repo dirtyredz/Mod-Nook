@@ -1,0 +1,65 @@
+# DECISIONS — Mod Nook
+
+Decisions worth not re-litigating. Newest first. Rationale is drawn from the code, README, and git
+history; where a rationale is inferred rather than recorded, it says so.
+
+## 2026-08-22 — Two safe structural extractions; the rest backlogged
+
+Moved `Palette` (out of `Rows.cs`) and `Tags` (out of `ModCatalog.cs`) into their own files.
+**Why:** both are shared helpers used across many files but were buried at the bottom of an unrelated
+one; relocating within the same namespace is a zero-risk, compile-verified move. **Rejected:** the
+larger splits surfaced by the full review (God-file decomposition, a modal-dialog base, an overlay
+context) — deferred to [BACKLOG.md](BACKLOG.md) because they change call sites or control flow and
+deserve their own reviewed pass, not a drive-by edit.
+
+## 2026-08 — Sidebar layout replaces the list→page navigation
+
+Mods run down a left sidebar with the selected mod's settings filling the right, instead of a mod-list
+page you enter and back out of. **Why:** both are always on screen, comparing two mods costs one click
+not three, and the header stops changing under the player. **Rejected:** the earlier list-then-detail
+page model. (Commit `af72d3a`.)
+
+## 2026-08 — Persist immediately; no Save button
+
+Every edit writes through to the mod's config file at once via `mod.Config.Save()`. **Why:** a panel
+that needs a separate Save is one people lose work in, and BepInEx already writes the whole file
+atomically. **Rejected:** a staged/apply model. **Cost:** no undo — reset is per-mod and behind a
+confirmation because the previous values are gone once written.
+
+## 2026-08 — Clone the game's own widgets rather than redraw them
+
+Every control is cloned from a live game instance and sanitized, not rebuilt in the game's likeness.
+**Why:** a cloned `CycleButton`/`SliderButton`/`AnimatedToggle` inherits the correct font, anchors,
+colours, and controller navigation for free, and cannot drift when the game updates. **Rejected:**
+hand-drawn look-alikes (font/scale/nav would drift). See `10`/`16`/`17` workspace guides. **Cost:** a
+sanitize step (strip localization, screen components, hover-select, colour animation, bat-wings).
+
+## 2026-08 — One-directional discovery; a separate mod, not a fork of Mod Menu
+
+Mod Nook reads other plugins' `ConfigEntry` metadata; nothing references Mod Nook. **Why:** a mod
+gets a page for free and keeps working when Mod Nook is absent; it also sidesteps Mod Menu's
+all-rights-reserved licence (no derivative build could be published). **Rejected:** forking/patching
+Mod Menu (licence forbids distributing modified builds) and requiring mods to register with an API.
+
+## 2026-08 — Version single-sourced from the csproj `<Version>`
+
+`ModBuildInfo.Version` is generated at compile time from `<Version>` by the `GenerateModBuildInfo`
+target in `Directory.Build.props`; `[BepInPlugin]` reads it. **Why:** the archive name (`pack.ps1`)
+and the BepInEx-reported version can never drift from a hand-typed string. **Rejected:** a hardcoded
+version constant in `Plugin.cs` (removed in `798ac3c`/`7f99776`).
+
+## 2026-08 — Cancel handled through the game's own action ids
+
+The `ProcessContinueInput` patch reads the game's own cancel condition/action ids rather than watching
+the Escape key. **Why:** the corner prompt fires `SimulateActionForAll`, not a click, so watching the
+key misses it; using the game's action means the panel answers to whatever cancel is bound to, on
+keyboard or gamepad (B on Steam Deck). **Rejected:** watching `KeyCode.Escape` directly. **Cost:** a
+game update could change the action ids; the failure mode is cancel quietly not working, and is logged.
+
+## 2026-08-04 — Name: "Mod Nook" display, `ModNook` everything else
+
+Display name **Mod Nook**; `ModNook` is the assembly/namespace/directory; GUID
+`com.dirtyredz.moonlightpeaks.modnook`. **Why:** the GUID also names the config file, so it must not
+change after release. **Rejected:** renaming post-1.0.0.
+
+_Living doc — refresh with /project-docs when it drifts._
