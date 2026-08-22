@@ -39,9 +39,10 @@ the game's own live UI; the code comments are the source of truth, this is the i
 ## Dialogs & popups
 
 - **Close open dialogs before hiding the overlay.** → Dialogs are children of the overlay; one left
-  open comes back with the overlay and sits over everything. → `Close` calls `KeyCapture/ListEditor/
-  ColorPicker.CloseAny()` and `Tooltip.Hide()` first. (Both this list and `RequestBack` hold the same
-  three names — keep them in sync until the dialog registry lands; see BACKLOG.)
+  open comes back with the overlay and sits over everything. → `Close` (and `RequestBack`) call
+  `ModalDialog.CloseCurrent()` — one handle tears down whatever modal is up — then `Tooltip.Hide()`.
+  Since a single `ModalDialog.current` replaced the three per-type statics, there is no longer a list
+  of names to keep in sync: a new dialog kind is covered the moment it subclasses `ModalDialog`.
 - **The game text popup opens *behind* our overlay unless the overlay stands down.** → The overlay is
   the canvas's last sibling and blocks raycasts, so the popup is unclickable and Escape never reaches
   it. → `SuspendOverlay` drops `OverlayGroup.blocksRaycasts` (and the dialog's own blocker) and
@@ -49,9 +50,10 @@ the game's own live UI; the code comments are the source of truth, this is the i
 - **Custom dialogs (key/colour/list) deliberately do *not* juggle `blocksRaycasts`.** → They're
   children of the overlay, so standing the overlay down would kill their own raycasts and clicks fall
   through to the pause menu. → Each carries its own full-screen blocker instead.
-- **Register the dialog singleton (`open = this`) *before* building its UI.** → A throw mid-build
-  would otherwise leave an un-closeable half-built dialog. → All three custom dialogs assign `open`
-  first (a contract currently duplicated 3×).
+- **Register the dialog singleton *before* building its UI.** → A throw mid-build would otherwise
+  leave an un-closeable half-built dialog. → `ModalDialog.Show<T>` assigns `current` before calling
+  the subclass `Build()`, so the contract is enforced once in the base — subclasses can't get it wrong
+  (two of the three used to, assigning it *after* `Build`).
 - **The text popup's prefix label is hidden, not blanked.** → Emptying the string leaves the object in
   the layout so the "Name:" gap stays; and it's the game's own creature-naming dialog, which needs the
   label back. → Hide the object and re-show it on `OnScreenHide`.

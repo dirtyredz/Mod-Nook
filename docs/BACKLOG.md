@@ -41,7 +41,7 @@ control flow wants an in-game play-test on top of the build.
   and `Close` now call `ModalDialog.CloseCurrent()`/read `ModalDialog.IsAnyOpen` instead of three
   hardcoded `if (X.IsOpen)` checks. A new dialog kind is closeable the moment it subclasses
   `ModalDialog` — no third list to update.
-- [ ] **P2 — Coarse-split `PanelController.cs` (1133 lines).** Extract the once-per-overlay
+- [ ] **P2 — Coarse-split `PanelController.cs` (1130 lines).** Extract the once-per-overlay
   construction block (`EnsureOverlay`…`BuildScroller`) into a `PanelChrome` builder; keep navigation,
   catalog selection, reset/persist, and dynamic rendering in the controller. Do **not** fragment
   header/footer/scroller/heading into micro-files (reviewers + Codex agree that's churn).
