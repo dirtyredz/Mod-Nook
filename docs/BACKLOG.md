@@ -7,9 +7,11 @@ correctness bug — all are shape or capability.
 ## Structural (from the 2026-08-22 review)
 
 Fixed so far (compile-verified): `Palette` → `src/Palette.cs` and `Tags` → `src/Tags.cs` (relocations);
-`SettingMetadata` and `TextPopupDialog` both extracted from `Rows.cs` (all 2026-08-22, see below) —
-`Rows.cs` is now 559 lines and its responsibility split is complete. The rest changes call sites or
-control flow and wants its own reviewed, in-game-tested pass.
+`SettingMetadata` and `TextPopupDialog` both extracted from `Rows.cs` — `Rows.cs` is now 559 lines and
+its responsibility split is complete; and the **modal-dialog abstraction + close/back registry**
+(`src/ModalDialog.cs`, the three dialogs now subclass it) (all 2026-08-22, see below). What remains is
+the overlay-context threading and the P2 `PanelController` split. Anything touching dialog/overlay
+control flow wants an in-game play-test on top of the build.
 
 - [x] **P1 — Extract `SettingMetadata` from `Rows.cs`.** _Done 2026-08-22._ Moved the pure, UI-free
   metadata parsing (`Label`/`Humanise`/`ExplicitChoices`/`DescriptionChoices`/`SentenceContaining`/
@@ -26,14 +28,19 @@ control flow and wants its own reviewed, in-game-tested pass.
   now `TextPopupDialog.SuspendOverlay` both reach into `Rows.OverlayGroup`. Thread an explicit
   `OverlayContext`/`PanelUiContext` into `Rows.Build`/`BuildText`, `TextPopupDialog`, and `Confirm.Ask`
   instead — this dissolves the last coupling left by the `TextPopupDialog` extraction.
-- [ ] **P1 — Introduce a modal-dialog abstraction.** `ColorPicker`/`KeyCapture`/`ListEditor` duplicate
-  the singleton lifecycle (`static open`/`IsOpen`/`Open`/`CloseAny`), the dim+panel scaffold, and
-  Escape-close — and the assign-`open`-before-`Build` ordering is a correctness contract copied 3×.
-  Extract a `ModalDialog` base or a compositional `PanelModalHost` + `ModalShell` builder. **Keep
-  `Confirm` out** — it wraps the game's native popup (different shape).
-- [ ] **P1 — Dialog registry for close/back.** `PanelController.RequestBack` and `Close` hardcode the
-  same three concrete dialog types; a 4th must be added to both or it becomes un-closeable. Have
-  dialogs self-register (folds into the modal abstraction) so the panel closes "whatever is open".
+- [x] **P1 — Introduce a modal-dialog abstraction.** _Done 2026-08-22._ Added `src/ModalDialog.cs`, an
+  `abstract ModalDialog : MonoBehaviour` base that owns the one-at-a-time singleton lifecycle, the
+  dim+centered-panel shell (`BuildShell(width, padding, spacing, …)`), Escape-close, and the
+  register-before-`Build` contract. `ColorPicker`/`KeyCapture`/`ListEditor` now subclass it and
+  implement only `Build`; each shed ~70–85 lines. Fixed a latent bug: `KeyCapture` and `ListEditor`
+  used to assign the singleton *after* `Build`, so a build that threw left an un-closeable half-built
+  dialog — now assigned once, before `Build`, in the base. `Confirm` stays out (native popup). Build
+  verified; wants an in-game play-test of the three dialogs.
+- [x] **P1 — Dialog registry for close/back.** _Done 2026-08-22 (folded into the modal abstraction)._
+  A single `ModalDialog.current` replaced the three per-type statics; `PanelController.RequestBack`
+  and `Close` now call `ModalDialog.CloseCurrent()`/read `ModalDialog.IsAnyOpen` instead of three
+  hardcoded `if (X.IsOpen)` checks. A new dialog kind is closeable the moment it subclasses
+  `ModalDialog` — no third list to update.
 - [ ] **P2 — Coarse-split `PanelController.cs` (1133 lines).** Extract the once-per-overlay
   construction block (`EnsureOverlay`…`BuildScroller`) into a `PanelChrome` builder; keep navigation,
   catalog selection, reset/persist, and dynamic rendering in the controller. Do **not** fragment

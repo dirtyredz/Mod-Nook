@@ -40,7 +40,7 @@ PanelController  (the panel: overlay + sidebar + page)
 | **Panel** ⚠️ | `PanelController.cs` (1133) | MonoBehaviour on the PauseScreen. Navigation state machine (open/close/back/show-mod/reset/persist) **+** one-time overlay & chrome construction **+** per-mod content rendering. God-file — see debt. | Rows, ModCatalog, PauseMenu, Templates, InputPrompt, Tooltip, Confirm, PanelSprite, all dialogs | Panel layout / navigation |
 | **Row factory** | `Rows.cs` (559) | Maps one `ConfigEntryBase` → the native widget for its type and binds it back **+** routes text settings to the right editor (colour/list/key/text popup) **+** builds the info icon. Also holds the panel-set overlay statics (`OverlayRoot`/`OverlayGroup`/`ButtonTemplate`). | Templates, dialogs, TextPopupDialog, SettingMetadata, Tooltip, PanelSprite, GameFonts, Tags, Palette | Add a setting-type → widget mapping |
 | **Setting metadata** | `SettingMetadata.cs` (275) | Pure, UI-free reading of a `ConfigEntryBase`: label (camel-case humanise + `ModNook.Label`), explicit/prose choices, numeric range, display summary, slider step. No UI, no shared state — reusable by rows and dialogs. | Tags | Label / choice / range rules |
-| **Modal dialogs** | `ColorPicker.cs` (596), `KeyCapture.cs` (343), `ListEditor.cs` (354) | Custom full-screen singleton dialogs (hex colour, key binding, comma-list). Each: `static open`, `Open`/`CloseAny`, build dim+panel, Save/Close. | Templates, PanelSprite, GameFonts, Palette, Rows (label/overlay) | A new editor kind |
+| **Modal dialogs** | `ModalDialog.cs` (170), `ColorPicker.cs` (510), `KeyCapture.cs` (273), `ListEditor.cs` (269) | `ModalDialog` base owns the one-at-a-time singleton lifecycle, the dim+centered-panel shell (`BuildShell`), Escape-close and the register-before-`Build` contract; the three subclasses (hex colour, key binding, comma-list) implement only their own `Build`. | ModalDialog, Templates, PanelSprite, GameFonts, Palette, Rows (label/overlay) | A new editor kind (subclass `ModalDialog`) |
 | **Native popup adapters** | `TextPopupDialog.cs` (192), `Confirm.cs` (92), `PopupEscape.cs` (52) | `TextPopupDialog` opens the game's `TextInputPopupScreen` for free-form/text settings, borrowing and restoring the overlay's raycast blocker and the popup's "Name:" prefix; `Confirm` drives `GenericPopupScreen` for reset; `PopupEscape` arms Escape on the popup. Distinct shape from the custom build-your-own dialogs. | Rows.OverlayGroup, SettingMetadata, game screens | Text-popup borrow/restore |
 | **Widget templating** | `Templates.cs` (546), `BatWingFitter.cs` (89) | Find & cache the game's Cycle/Slider/Toggle/Button templates; clone; sanitize a clone (strip localization/decorations/hover-select/colour-freeze/bat-wings); relabel. `BatWingFitter` repositions wing ornaments a frame after layout. | game UI assemblies | Adjust how cloned widgets are tamed |
 | **Pause-menu integration** | `PauseMenu.cs` (280) | Source the pause button template, add ours, grow the pause panel to fit — plus a `VerboseLogging` hierarchy dump. | game PauseScreen | Button placement / fit |
@@ -91,13 +91,15 @@ Two safe relocations were fixed then (`Palette`, `Tags` → own files); the rest
 - **P1 · `Rows.OverlayRoot` / `OverlayGroup` / `ButtonTemplate` are a leaky back-channel** — public
   mutable statics set by `PanelController`, read deep in row/dialog code; `Confirm` reaches straight
   into `Rows.OverlayGroup`. Wants an explicit `OverlayContext`/`PanelUiContext` threaded in. *(backlog)*
-- **P1 · Missing modal-dialog abstraction** — `ColorPicker`/`KeyCapture`/`ListEditor` each re-implement
-  the same singleton lifecycle + dim/panel scaffold + Escape-close (~60 lines each), and the
-  assign-`open`-before-`Build` ordering is a correctness contract duplicated three times. Wants a
-  `ModalDialog` base or `PanelModalHost` (keep `Confirm` out — it wraps a native popup). *(backlog)*
-- **P1 · `PanelController.RequestBack` and `Close` hardcode the same 3 concrete dialog types** — a
-  4th dialog must be added to both lists or it becomes un-closeable. Wants a dialog registry (folds
-  into the modal abstraction). *(backlog)*
+- **P1 · Modal-dialog abstraction — done (2026-08-22).** `ColorPicker`/`KeyCapture`/`ListEditor` now
+  subclass `ModalDialog` (`src/ModalDialog.cs`), which owns the singleton lifecycle, the dim/panel
+  shell (`BuildShell`) and Escape-close, and fixes the assign-before-`Build` contract in one place —
+  two of the three subclasses used to assign it *after* `Build`, leaving an un-closeable half-built
+  dialog if the build threw. `Confirm` stays out (it wraps a native popup).
+- **P1 · Dialog close/back registry — done (2026-08-22, folded into the modal abstraction).** A single
+  `ModalDialog.current` replaced the three per-type statics; `PanelController.RequestBack`/`Close` now
+  call `ModalDialog.CloseCurrent()`, so a new dialog kind is closeable the moment it subclasses
+  `ModalDialog` — no third place to update.
 - **P2 · `PanelController.cs` God-file** — one coarse extraction warranted: the once-per-overlay
   construction block (`EnsureOverlay`…`BuildScroller`, ~408–943) → a `PanelChrome` builder. Do **not**
   fragment header/footer/scroller into micro-files (reviewer + Codex agree that's churn). *(backlog)*

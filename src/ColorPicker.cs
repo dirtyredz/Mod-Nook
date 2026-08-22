@@ -23,19 +23,12 @@ namespace ModNook
     /// exactly what it always did and hand-editing still works.
     /// </para>
     /// </summary>
-    internal sealed class ColorPicker : MonoBehaviour
+    internal sealed class ColorPicker : ModalDialog
     {
-        private static ColorPicker open;
-
-        /// <summary>True while the dialog is up, so the panel leaves cancel to it.</summary>
-        internal static bool IsOpen => open != null;
-
         private ConfigEntryBase entry;
         private AnimatedButton buttonTemplate;
         private Action<string> onSave;
 
-        private GameObject root;
-        private CanvasGroup group;
         private Image preview;
         private TextMeshProUGUI hexText;
 
@@ -92,23 +85,12 @@ namespace ModNook
             RectTransform parent, ConfigEntryBase entry, AnimatedButton buttonTemplate,
             Action<string> onSave)
         {
-            CloseAny();
-
-            var host = new GameObject("ModNook_ColorPicker", typeof(RectTransform));
-            host.transform.SetParent(parent, false);
-            host.transform.SetAsLastSibling();
-
-            var picker = host.AddComponent<ColorPicker>();
-            picker.entry = entry;
-            picker.buttonTemplate = buttonTemplate;
-            picker.onSave = onSave;
-
-            // Registered before it is built, not after. If building throws, a dialog assigned only
-            // on success is one nothing knows about - CloseAny cannot reach it and IsOpen denies it
-            // exists, while the half-built thing sits on screen blocking every click.
-            open = picker;
-
-            picker.Build(host);
+            Show<ColorPicker>(parent, "ModNook_ColorPicker", picker =>
+            {
+                picker.entry = entry;
+                picker.buttonTemplate = buttonTemplate;
+                picker.onSave = onSave;
+            });
         }
 
         /// <summary>
@@ -127,56 +109,10 @@ namespace ModNook
             }
         }
 
-        internal static void CloseAny()
+        protected override void Build()
         {
-            if (open != null)
-            {
-                open.Close();
-            }
-
-            open = null;
-        }
-
-        private void Build(GameObject host)
-        {
-            root = host;
-
-            var hostRect = (RectTransform)host.transform;
-            hostRect.anchorMin = Vector2.zero;
-            hostRect.anchorMax = Vector2.one;
-            hostRect.offsetMin = Vector2.zero;
-            hostRect.offsetMax = Vector2.zero;
-
-            var dim = host.AddComponent<Image>();
-            dim.color = new Color(0.02f, 0.01f, 0.04f, 0.8f);
-            dim.raycastTarget = true;
-
-            group = host.AddComponent<CanvasGroup>();
-
-            var panel = new GameObject(
-                "Panel", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image),
-                typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
-            panel.transform.SetParent(host.transform, false);
-
-            var panelRect = (RectTransform)panel.transform;
-            panelRect.anchorMin = new Vector2(0.5f, 0.5f);
-            panelRect.anchorMax = new Vector2(0.5f, 0.5f);
-            panelRect.pivot = new Vector2(0.5f, 0.5f);
-            panelRect.sizeDelta = new Vector2(900f, 0f);
-
-            var plate = panel.GetComponent<Image>();
-            plate.sprite = PanelSprite.Get();
-            plate.type = Image.Type.Sliced;
-
-            var layout = panel.GetComponent<VerticalLayoutGroup>();
-            layout.padding = new RectOffset(44, 44, 32, 32);
-            layout.spacing = 14f;
-            layout.childControlWidth = true;
-            layout.childForceExpandWidth = true;
-            layout.childControlHeight = true;
-            layout.childForceExpandHeight = false;
-
-            panel.GetComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            var hostRect = (RectTransform)Root.transform;
+            var panel = (RectTransform)BuildShell(900f, new RectOffset(44, 44, 32, 32), 14f);
 
             Step("read", ReadCurrent);
 
@@ -196,8 +132,8 @@ namespace ModNook
                 "setting empty, which is what a mod reads as \"use my default\".",
                 20f, Palette.Muted));
 
-            LayoutRebuilder.ForceRebuildLayoutImmediate(panelRect);
-            ClampToScreen(panelRect, hostRect);
+            LayoutRebuilder.ForceRebuildLayoutImmediate(panel);
+            ClampToScreen(panel, hostRect);
         }
 
         /// <summary>
@@ -538,18 +474,6 @@ namespace ModNook
             rect.offsetMax = Vector2.zero;
         }
 
-        /// <summary>
-        /// Escape always leaves, whatever state the buttons are in. Every dialog in here needs one
-        /// exit that does not depend on anything having been built correctly.
-        /// </summary>
-        private void Update()
-        {
-            if (UnityEngine.Input.GetKeyDown(KeyCode.Escape))
-            {
-                Close();
-            }
-        }
-
         private void Save()
         {
             onSave?.Invoke(Hex());
@@ -564,16 +488,6 @@ namespace ModNook
         {
             onSave?.Invoke(string.Empty);
             Close();
-        }
-
-        private void Close()
-        {
-            if (open == this)
-            {
-                open = null;
-            }
-
-            DestroyImmediate(root);
         }
 
         private static TextMeshProUGUI Text(

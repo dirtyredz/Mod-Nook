@@ -115,10 +115,9 @@ namespace ModNook
 
             // When a dialog is open, cancel closes it rather than stepping the panel back.
             // This lets gamepad cancel (B on Steam Deck) dismiss these dialogs, since they
-            // have no physical Escape key.
-            if (KeyCapture.IsOpen) { KeyCapture.CloseAny(); return; }
-            if (ListEditor.IsOpen) { ListEditor.CloseAny(); return; }
-            if (ColorPicker.IsOpen) { ColorPicker.CloseAny(); return; }
+            // have no physical Escape key. One handle closes whatever modal is up, so a new
+            // dialog kind is covered the moment it exists.
+            if (ModalDialog.IsAnyOpen) { ModalDialog.CloseCurrent(); return; }
 
             active.Back();
         }
@@ -146,9 +145,7 @@ namespace ModNook
 
             // Before the overlay goes: the dialog is a child of it, so one left open would come
             // back with the overlay and sit over everything.
-            KeyCapture.CloseAny();
-            ListEditor.CloseAny();
-            ColorPicker.CloseAny();
+            ModalDialog.CloseCurrent();
             Tooltip.Hide();
 
             // The prompt bar is shared, so ours has to be withdrawn or it stays in the corner of

@@ -19,7 +19,7 @@ namespace ModNook
     /// hitting the wrong key costs a second press rather than a trip to the config file.
     /// </para>
     /// </summary>
-    internal sealed class KeyCapture : MonoBehaviour
+    internal sealed class KeyCapture : ModalDialog
     {
         /// <summary>Held keys that qualify a binding rather than being the binding.</summary>
         private static readonly KeyCode[] Modifiers =
@@ -30,10 +30,10 @@ namespace ModNook
         };
 
         private ConfigEntryBase entry;
+        private AnimatedButton buttonTemplate;
         private Action<KeyboardShortcut> onSave;
         private Action onClosed;
 
-        private GameObject root;
         private TextMeshProUGUI currentText;
         private TextMeshProUGUI promptText;
 
@@ -48,85 +48,23 @@ namespace ModNook
         /// Opens the dialog over <paramref name="parent"/>, which should be the panel overlay so it
         /// covers the settings list.
         /// </summary>
-        private static KeyCapture open;
-
-        /// <summary>True while the dialog is up, so the panel leaves Escape to it.</summary>
-        internal static bool IsOpen => open != null;
-
         internal static void Open(
             RectTransform parent, ConfigEntryBase entry, AnimatedButton buttonTemplate,
             Action<KeyboardShortcut> onSave, Action onClosed = null)
         {
-            CloseAny();
-
-            var host = new GameObject("ModNook_KeyCapture", typeof(RectTransform));
-            host.transform.SetParent(parent, false);
-            host.transform.SetAsLastSibling();
-
-            var capture = host.AddComponent<KeyCapture>();
-            capture.entry = entry;
-            capture.onSave = onSave;
-            capture.onClosed = onClosed;
-            capture.Build(host, buttonTemplate);
-
-            open = capture;
-        }
-
-        /// <summary>
-        /// Tears down any open dialog. The panel calls this when it closes: the dialog is a child of
-        /// the overlay, so without it a dialog left open when the pause menu is dismissed simply
-        /// reappears - on top of everything, blocking every button - the next time the panel opens.
-        /// </summary>
-        internal static void CloseAny()
-        {
-            if (open != null)
+            Show<KeyCapture>(parent, "ModNook_KeyCapture", capture =>
             {
-                open.Close();
-            }
-
-            open = null;
+                capture.entry = entry;
+                capture.buttonTemplate = buttonTemplate;
+                capture.onSave = onSave;
+                capture.onClosed = onClosed;
+            });
         }
 
-        private void Build(GameObject host, AnimatedButton buttonTemplate)
+        protected override void Build()
         {
-            root = host;
-
-            var hostRect = (RectTransform)host.transform;
-            hostRect.anchorMin = Vector2.zero;
-            hostRect.anchorMax = Vector2.one;
-            hostRect.offsetMin = Vector2.zero;
-            hostRect.offsetMax = Vector2.zero;
-
-            var dim = host.AddComponent<Image>();
-            dim.color = new Color(0.02f, 0.01f, 0.04f, 0.8f);
-            dim.raycastTarget = true;
-
-            var panel = new GameObject(
-                "Panel", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image),
-                typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
-            panel.transform.SetParent(host.transform, false);
-
-            var panelRect = (RectTransform)panel.transform;
-            panelRect.anchorMin = new Vector2(0.5f, 0.5f);
-            panelRect.anchorMax = new Vector2(0.5f, 0.5f);
-            panelRect.pivot = new Vector2(0.5f, 0.5f);
-            panelRect.sizeDelta = new Vector2(760f, 0f);
-
-            var plate = panel.GetComponent<Image>();
-            plate.sprite = PanelSprite.Get();
-            plate.type = Image.Type.Sliced;
-
-            var layout = panel.GetComponent<VerticalLayoutGroup>();
-            layout.padding = new RectOffset(48, 48, 36, 36);
-            layout.spacing = 14f;
-            layout.childAlignment = TextAnchor.MiddleCenter;
-            layout.childControlWidth = true;
-            layout.childForceExpandWidth = true;
-            layout.childControlHeight = true;
-            layout.childForceExpandHeight = false;
-
-            var fitter = panel.GetComponent<ContentSizeFitter>();
-            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            var panel = (RectTransform)BuildShell(
+                760f, new RectOffset(48, 48, 36, 36), 14f, TextAnchor.MiddleCenter);
 
             Text(panel.transform, Describe(entry.Definition.Key), 34f, Palette.Label);
 
@@ -171,7 +109,7 @@ namespace ModNook
                       "its own to bind just that key. Nothing is written until you press Save.",
                 20f, Palette.Muted);
 
-            LayoutRebuilder.ForceRebuildLayoutImmediate(panelRect);
+            LayoutRebuilder.ForceRebuildLayoutImmediate(panel);
             Listen();
         }
 
@@ -193,7 +131,7 @@ namespace ModNook
             listening = true;
         }
 
-        private void Update()
+        protected override void Update()
         {
             if (!listening)
             {
@@ -288,18 +226,10 @@ namespace ModNook
             Close();
         }
 
-        private void Close()
+        /// <summary>A key binding can be armed with a callback for when the dialog goes away.</summary>
+        protected override void OnClosing()
         {
-            if (open == this)
-            {
-                open = null;
-            }
-
             onClosed?.Invoke();
-
-            // Immediate, so a dialog dismissed as the panel closes is gone before the overlay is
-            // hidden - a deferred Destroy would leave it to reappear with the overlay next time.
-            DestroyImmediate(root);
         }
 
         private static TextMeshProUGUI Text(

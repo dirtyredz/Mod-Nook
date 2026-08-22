@@ -25,21 +25,14 @@ namespace ModNook
     /// installed.
     /// </para>
     /// </summary>
-    internal sealed class ListEditor : MonoBehaviour
+    internal sealed class ListEditor : ModalDialog
     {
         private const char Separator = ',';
-
-        private static ListEditor open;
-
-        /// <summary>True while the dialog is up, so the panel leaves Escape to it.</summary>
-        internal static bool IsOpen => open != null;
 
         private ConfigEntryBase entry;
         private AnimatedButton buttonTemplate;
         private Action<string> onSave;
 
-        private GameObject root;
-        private CanvasGroup group;
         private Transform itemsHost;
         private TextMeshProUGUI emptyNote;
 
@@ -69,75 +62,19 @@ namespace ModNook
             RectTransform parent, ConfigEntryBase entry, AnimatedButton buttonTemplate,
             Action<string> onSave)
         {
-            CloseAny();
-
-            var host = new GameObject("ModNook_ListEditor", typeof(RectTransform));
-            host.transform.SetParent(parent, false);
-            host.transform.SetAsLastSibling();
-
-            var editor = host.AddComponent<ListEditor>();
-            editor.entry = entry;
-            editor.buttonTemplate = buttonTemplate;
-            editor.onSave = onSave;
-            editor.Build(host);
-
-            open = editor;
-        }
-
-        /// <summary>Tears down any open editor, so one cannot outlive the panel that owns it.</summary>
-        internal static void CloseAny()
-        {
-            if (open != null)
+            Show<ListEditor>(parent, "ModNook_ListEditor", editor =>
             {
-                open.Close();
-            }
-
-            open = null;
+                editor.entry = entry;
+                editor.buttonTemplate = buttonTemplate;
+                editor.onSave = onSave;
+            });
         }
 
-        private void Build(GameObject host)
+        protected override void Build()
         {
-            root = host;
+            var panel = BuildShell(880f, new RectOffset(40, 40, 32, 32), 12f);
 
-            var hostRect = (RectTransform)host.transform;
-            hostRect.anchorMin = Vector2.zero;
-            hostRect.anchorMax = Vector2.one;
-            hostRect.offsetMin = Vector2.zero;
-            hostRect.offsetMax = Vector2.zero;
-
-            var dim = host.AddComponent<Image>();
-            dim.color = new Color(0.02f, 0.01f, 0.04f, 0.8f);
-            dim.raycastTarget = true;
-
-            group = host.AddComponent<CanvasGroup>();
-
-            var panel = new GameObject(
-                "Panel", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image),
-                typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
-            panel.transform.SetParent(host.transform, false);
-
-            var panelRect = (RectTransform)panel.transform;
-            panelRect.anchorMin = new Vector2(0.5f, 0.5f);
-            panelRect.anchorMax = new Vector2(0.5f, 0.5f);
-            panelRect.pivot = new Vector2(0.5f, 0.5f);
-            panelRect.sizeDelta = new Vector2(880f, 0f);
-
-            var plate = panel.GetComponent<Image>();
-            plate.sprite = PanelSprite.Get();
-            plate.type = Image.Type.Sliced;
-
-            var layout = panel.GetComponent<VerticalLayoutGroup>();
-            layout.padding = new RectOffset(40, 40, 32, 32);
-            layout.spacing = 12f;
-            layout.childControlWidth = true;
-            layout.childForceExpandWidth = true;
-            layout.childControlHeight = true;
-            layout.childForceExpandHeight = false;
-
-            var fitter = panel.GetComponent<ContentSizeFitter>();
-            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-            Text(panel.transform, SettingMetadata.Label(entry), 34f, Palette.Label, TextAlignmentOptions.Center);
+            Text(panel, SettingMetadata.Label(entry), 34f, Palette.Label, TextAlignmentOptions.Center);
 
             var description = entry.Description?.Description;
             if (!string.IsNullOrEmpty(description))
@@ -224,7 +161,7 @@ namespace ModNook
                 AddRow(item);
             }
 
-            LayoutRebuilder.ForceRebuildLayoutImmediate((RectTransform)root.transform);
+            LayoutRebuilder.ForceRebuildLayoutImmediate((RectTransform)Root.transform);
         }
 
         private void AddRow(string item)
@@ -282,7 +219,7 @@ namespace ModNook
         {
             TextPopupDialog.Prompt(
                 $"Add to {SettingMetadata.Label(entry)}", "One entry. Commas are added for you.",
-                string.Empty, group,
+                string.Empty, Group,
                 typed =>
                 {
                     var cleaned = typed?.Trim();
@@ -306,32 +243,10 @@ namespace ModNook
                 });
         }
 
-        /// <summary>
-        /// Escape always leaves, whatever state the buttons are in - the same guarantee every other
-        /// dialog here makes.
-        /// </summary>
-        private void Update()
-        {
-            if (UnityEngine.Input.GetKeyDown(KeyCode.Escape))
-            {
-                Close();
-            }
-        }
-
         private void Save()
         {
             onSave?.Invoke(string.Join(",", items.ToArray()));
             Close();
-        }
-
-        private void Close()
-        {
-            if (open == this)
-            {
-                open = null;
-            }
-
-            DestroyImmediate(root);
         }
 
         private static TextMeshProUGUI Text(
