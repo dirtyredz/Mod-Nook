@@ -231,8 +231,7 @@ namespace ModNook
         {
             var row = ClickableRow(entry, parent, out var plate, out var value);
 
-            var popup = TextPopupDialog.TextPopup;
-            if (popup == null)
+            if (!TextPopupDialog.IsAvailable)
             {
                 // No popup means no way to type. Leave the row readable rather than pretending it
                 // is interactive.

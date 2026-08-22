@@ -8,8 +8,9 @@ namespace ModNook
 {
     /// <summary>
     /// Reads a <see cref="ConfigEntryBase"/>'s metadata - label, choices, range, display value - out
-    /// of its key, type, tags and description. Pure interpretation: no UI, no shared state, so it can
-    /// be reused by the row factory and by dialogs built outside it.
+    /// of its key, type, tags and description. Interpretation only: no UI and no instance state (it
+    /// logs a warning through the plugin logger when a tag is malformed), so it can be reused by the
+    /// row factory and by dialogs built outside it.
     /// </summary>
     internal static class SettingMetadata
     {

@@ -187,6 +187,10 @@ namespace ModNook
             popup.OnScreenHide.AddListener(restore);
         }
 
-        internal static TextInputPopupScreen TextPopup => UIScreen<TextInputPopupScreen>.Instance;
+        /// <summary>Whether the game's text popup exists to be opened - the row falls back to
+        /// read-only when it does not. Keeps the concrete screen type out of the row factory.</summary>
+        internal static bool IsAvailable => TextPopup != null;
+
+        private static TextInputPopupScreen TextPopup => UIScreen<TextInputPopupScreen>.Instance;
     }
 }
