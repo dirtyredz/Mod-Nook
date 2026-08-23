@@ -128,7 +128,16 @@ namespace ModNook
 
         private void Nudge(decimal by)
         {
-            value = Clamp(value + by);
+            var next = Clamp(value + by);
+
+            // A nudge that hits a clamp boundary changes nothing; don't mark it edited, so it can't
+            // rewrite (and cosmetically reformat) a value the player never actually moved.
+            if (next == value && !unrepresentable)
+            {
+                return;
+            }
+
+            value = next;
             edited = true;
             unrepresentable = false;
             valueText.text = Format(value);
