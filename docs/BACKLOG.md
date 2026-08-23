@@ -7,12 +7,15 @@ correctness bug — all are shape or capability.
 ## Structural (from the 2026-08-22 review)
 
 Fixed so far (compile-verified): `Palette` → `src/Palette.cs` and `Tags` → `src/Tags.cs` (relocations);
-`SettingMetadata` and `TextPopupDialog` both extracted from `Rows.cs` — `Rows.cs` is now 559 lines and
+`SettingMetadata` and `TextPopupDialog` both extracted from `Rows.cs` — `Rows.cs` is now 550 lines and
 its responsibility split is complete; the **modal-dialog abstraction + close/back registry**
 (`src/ModalDialog.cs`, the three dialogs now subclass it); and the **overlay-context threading**
-(`src/OverlayContext.cs`, the static back-channel is gone) (all 2026-08-22, see below). What remains
-structurally is the P2 `PanelController` split and the P2 UI-primitive dedupe. Anything touching
-dialog/overlay control flow wants an in-game play-test on top of the build.
+(`src/OverlayContext.cs`, the static back-channel is gone); and the **`PanelChrome` split** — the
+once-per-overlay construction moved to `src/PanelChrome.cs`, dropping `PanelController` 1136 → 590
+lines, with the shared `NewText`/`Stretch` primitives lifted into `src/UiText.cs` (all 2026-08-22, see
+below). What remains structurally is finishing the UI-primitive dedupe (the dialogs' own `Text(...)`)
+and the optional `PauseMenu` debug-helper move. Anything touching dialog/overlay control flow wants an
+in-game play-test on top of the build.
 
 - [x] **P1 — Extract `SettingMetadata` from `Rows.cs`.** _Done 2026-08-22._ Moved the pure, UI-free
   metadata parsing (`Label`/`Humanise`/`ExplicitChoices`/`DescriptionChoices`/`SentenceContaining`/
@@ -43,13 +46,17 @@ dialog/overlay control flow wants an in-game play-test on top of the build.
   and `Close` now call `ModalDialog.CloseCurrent()`/read `ModalDialog.IsAnyOpen` instead of three
   hardcoded `if (X.IsOpen)` checks. A new dialog kind is closeable the moment it subclasses
   `ModalDialog` — no third list to update.
-- [ ] **P2 — Coarse-split `PanelController.cs` (1136 lines).** Extract the once-per-overlay
-  construction block (`EnsureOverlay`…`BuildScroller`) into a `PanelChrome` builder; keep navigation,
-  catalog selection, reset/persist, and dynamic rendering in the controller. Do **not** fragment
-  header/footer/scroller/heading into micro-files (reviewers + Codex agree that's churn).
-- [ ] **P2 — Dedupe UI primitives.** One `UiText.New(...)` TMP builder (currently written 5×) and one
-  shared `Stretch(RectTransform)` (2 named + 5 inline copies), in a small `UiPrimitives`/`UiText`
-  helper. Resolve the wrap-on inconsistency between the copies while doing it.
+- [x] **P2 — Coarse-split `PanelController.cs`.** _Done 2026-08-22; play-tested._ Moved the
+  once-per-overlay construction block (`EnsureOverlay`…`BuildScroller`) into `src/PanelChrome.cs`, a
+  builder that returns the handles the controller drives (`Overlay`/`Context`/`Content`/`Sidebar`/
+  `Title`/`ResetButton`/`UsingGamePrompt`); the footer's Reset/Close call back through actions.
+  Navigation, catalog selection, reset/persist and per-mod rendering stay in the controller, which
+  dropped 1136 → 590 lines (under the cap). Header/footer/scroller were **not** fragmented into
+  micro-files.
+- [ ] **P2 — Dedupe UI primitives.** _Partly done 2026-08-22:_ the panel's `NewText` + `Stretch` moved
+  to `src/UiText.cs` (shared by `PanelChrome` + `PanelController`). Still open: the dialogs' own
+  near-identical `Text(...)` TMP builder (written 3× across `ColorPicker`/`KeyCapture`/`ListEditor`)
+  could fold into `UiText`. Resolve the wrap-on inconsistency between the copies while doing it.
 - [ ] **P2 — Move `PauseMenu.DumpHierarchy`/`Describe`** (~70 lines of debug tooling) out of the
   fit/layout class into a `HierarchyDebug` helper. Optional.
 

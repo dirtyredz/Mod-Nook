@@ -3,6 +3,26 @@
 Decisions worth not re-litigating. Newest first. Rationale is drawn from the code, README, and git
 history; where a rationale is inferred rather than recorded, it says so.
 
+## 2026-08-22 — Split `PanelChrome` out of `PanelController`; share `UiText`
+
+Moved the once-per-overlay chrome construction (`EnsureOverlay` and its `AddBackdrop`/`BuildPanel`/
+`BuildHeader`/`CloneSettingsHeader`/`BuildFooter`/`BuildBody`/`BuildScroller` helpers) into a new
+`src/PanelChrome.cs` builder. `PanelChrome.Build(pauseScreen, onClose, onReset)` builds everything and
+returns the handles the controller drives (`Overlay`/`Context`/`Content`/`Sidebar`/`Title`/
+`ResetButton`/`UsingGamePrompt`); `PanelController.EnsureOverlay` shrank to delegating + unpacking those
+into its existing fields. `PanelController` went 1136 → 590 lines, back under the ~800 God-file cap.
+**Why:** it was the last God-file, mixing three concerns (navigation, chrome construction, content
+rendering); construction is the self-contained, once-per-overlay concern and lifts out cleanly.
+**Chosen shape:** a builder that returns handles, with the controller keeping its fields — smallest
+blast radius, so the navigation/content code is untouched; the footer's Reset/Close call back through
+`Action`s rather than the chrome knowing the controller. **Rejected:** fragmenting header/footer/
+scroller/heading into their own micro-files — the prior full review + Codex agreed that's churn, not
+clarity; and pushing the whole `OverlayContext` into every dialog (kept from the overlay-context ADR).
+The two shared UI primitives `NewText` + `Stretch` moved to `src/UiText.cs` (a neutral home both the
+chrome and the controller's content use), which also starts the separate UI-primitive dedupe. No
+behaviour change; Release build verified and play-tested (open, mod list, per-mod pages, scrolling,
+dialogs, reset, Close/Esc).
+
 ## 2026-08-22 — Thread an explicit `OverlayContext`; drop the `Rows` overlay statics
 
 Replaced the public mutable statics `Rows.OverlayRoot`/`OverlayGroup`/`ButtonTemplate` with a small

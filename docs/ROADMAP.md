@@ -25,9 +25,11 @@ On top of 1.0.0 in `HEAD` (commit `3f5f65f`, marked WIP) — do **not** publish 
 Pay down the debt recorded in [../STRUCTURE.md](../STRUCTURE.md) / [BACKLOG.md](BACKLOG.md), one
 independently reviewable and in-game-testable step at a time. **Done (2026-08-22):** the `Rows.cs`
 responsibility split (`SettingMetadata` + `TextPopupDialog`), the modal-dialog abstraction + close/back
-registry (`ModalDialog`), and the overlay-context threading (`OverlayContext`, static back-channel
-removed). **Remaining:** coarse-split the `PanelController` God-file (`PanelChrome`) and dedupe the UI
-primitives (`UiText`/`Stretch`).
+registry (`ModalDialog`), the overlay-context threading (`OverlayContext`, static back-channel removed),
+and the `PanelChrome` split (`PanelController` 1136 → 590 lines, shared `NewText`/`Stretch` lifted into
+`UiText`). No file is over the God-file cap now. **Remaining (optional):** fold the dialogs' own
+`Text(...)` builder into `UiText`, and move `PauseMenu.DumpHierarchy`/`Describe` to a `HierarchyDebug`
+helper.
 
 ## 📋 Phase 4 — capability gaps (author-facing)
 

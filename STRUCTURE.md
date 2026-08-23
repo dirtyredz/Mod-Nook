@@ -37,7 +37,8 @@ PanelController  (the panel: overlay + sidebar + page)
 | Component | Files | Responsibility | Depends on | Seam |
 |---|---|---|---|---|
 | **Entry & patches** | `Plugin.cs` | `ModNookPlugin` binds its own config and installs 3 Harmony patches; the patch classes forward OnShow/OnHide/cancel to `PanelController`. | PanelController | Add a patch / config entry here |
-| **Panel** ⚠️ | `PanelController.cs` (1136) | MonoBehaviour on the PauseScreen. Navigation state machine (open/close/back/show-mod/reset/persist) **+** one-time overlay & chrome construction **+** per-mod content rendering. God-file — see debt. | Rows, ModCatalog, PauseMenu, Templates, InputPrompt, Tooltip, Confirm, PanelSprite, all dialogs | Panel layout / navigation |
+| **Panel** | `PanelController.cs` (590) | MonoBehaviour on the PauseScreen. Navigation state machine (open/close/back/show-mod/reset/persist) **+** per-mod content rendering. Delegates the once-per-overlay chrome construction to `PanelChrome` and keeps the handles it returns. | PanelChrome, Rows, ModCatalog, PauseMenu, Templates, InputPrompt, Tooltip, Confirm, PanelSprite, UiText | Panel navigation / content |
+| **Panel chrome** | `PanelChrome.cs` (602) | Builds the once-per-overlay chrome — overlay, cloned settings backdrop + header, panel plate, mods/detail body with scrollers, footer — and returns the handles the controller drives (`Overlay`/`Context`/`Content`/`Sidebar`/`Title`/`ResetButton`/`UsingGamePrompt`). Construction only; the footer's Reset/Close call back through actions. | PauseMenu, Templates, PanelSprite, Tooltip, InputPrompt, PromptButton, OverlayContext, UiText, game screens | Panel layout / chrome |
 | **Row factory** | `Rows.cs` (550) | Maps one `ConfigEntryBase` → the native widget for its type and binds it back **+** routes text settings to the right editor (colour/list/key/text popup) **+** builds the info icon. Takes an explicit `OverlayContext` for the dialogs it routes to — no shared statics. | Templates, dialogs, TextPopupDialog, SettingMetadata, OverlayContext, Tooltip, PanelSprite, GameFonts, Tags, Palette | Add a setting-type → widget mapping |
 | **Setting metadata** | `SettingMetadata.cs` (275) | Pure, UI-free reading of a `ConfigEntryBase`: label (camel-case humanise + `ModNook.Label`), explicit/prose choices, numeric range, display summary, slider step. No UI, no shared state — reusable by rows and dialogs. | Tags | Label / choice / range rules |
 | **Modal dialogs** | `ModalDialog.cs` (170), `ColorPicker.cs` (510), `KeyCapture.cs` (273), `ListEditor.cs` (271) | `ModalDialog` base owns the one-at-a-time singleton lifecycle, the dim+centered-panel shell (`BuildShell`), Escape-close and the register-before-`Build` contract; the three subclasses (hex colour, key binding, comma-list) implement only their own `Build`. They no longer read anything off `Rows` — parent/template/overlay group arrive as call args from the `OverlayContext`. | ModalDialog, Templates, PanelSprite, GameFonts, Palette, SettingMetadata | A new editor kind (subclass `ModalDialog`) |
@@ -45,10 +46,10 @@ PanelController  (the panel: overlay + sidebar + page)
 | **Widget templating** | `Templates.cs` (546), `BatWingFitter.cs` (89) | Find & cache the game's Cycle/Slider/Toggle/Button templates; clone; sanitize a clone (strip localization/decorations/hover-select/colour-freeze/bat-wings); relabel. `BatWingFitter` repositions wing ornaments a frame after layout. | game UI assemblies | Adjust how cloned widgets are tamed |
 | **Pause-menu integration** | `PauseMenu.cs` (280) | Source the pause button template, add ours, grow the pause panel to fit — plus a `VerboseLogging` hierarchy dump. | game PauseScreen | Button placement / fit |
 | **Catalog** | `ModCatalog.cs` (170), `Tags.cs` (46) | Discover loaded plugins that expose settings; group into `ModEntry`/`SectionEntry`; honour `ModNook.Hidden`. `Tags` reads the optional `ModNook.*` description tags. | BepInEx Chainloader | Discovery / tag vocabulary |
-| **Drawing & theming** | `PanelSprite.cs` (182), `GameFonts.cs` (178), `Palette.cs` (10), `Tooltip.cs` (184) | Procedural sliced/circle sprites; find & apply the game font; shared colours; hover tooltip + `TooltipTrigger`. | game UI/TMP | Look & feel primitives |
+| **Drawing & theming** | `PanelSprite.cs` (182), `GameFonts.cs` (178), `Palette.cs` (10), `Tooltip.cs` (184), `UiText.cs` (40) | Procedural sliced/circle sprites; find & apply the game font; shared colours; hover tooltip + `TooltipTrigger`; `UiText` is the shared TMP-label + full-parent-stretch pair used by the panel chrome and content. | game UI/TMP | Look & feel primitives |
 | **Corner prompt** | `InputPrompt.cs` (144), `PromptButton.cs` (128) | Register/withdraw the game's real corner **Close** prompt (drawing the player's bound key cap); build a prompt-style button when the real one is unavailable. | game input screens | Prompt bar |
 
-⚠️ = over the ~800-line God-file cap; see **Structural debt**.
+No file is currently over the ~800-line God-file cap. (⚠️ would mark one; see **Structural debt**.)
 
 ## Key flows
 
@@ -101,11 +102,15 @@ Two safe relocations were fixed then (`Palette`, `Tags` → own files); the rest
   `ModalDialog.current` replaced the three per-type statics; `PanelController.RequestBack`/`Close` now
   call `ModalDialog.CloseCurrent()`, so a new dialog kind is closeable the moment it subclasses
   `ModalDialog` — no third place to update.
-- **P2 · `PanelController.cs` God-file** — one coarse extraction warranted: the once-per-overlay
-  construction block (`EnsureOverlay`…`BuildScroller`, ~408–943) → a `PanelChrome` builder. Do **not**
-  fragment header/footer/scroller into micro-files (reviewer + Codex agree that's churn). *(backlog)*
-- **P2 · Duplicated UI primitives** — `NewText`/`AddText`/`Text` TMP builder is written 5×; `Stretch`
-  exists as 2 named copies + 5 inline. Wants a small `UiText`/`UiPrimitives` helper. *(backlog)*
+- **P2 · `PanelController.cs` God-file — done (2026-08-22).** The once-per-overlay construction block
+  (`EnsureOverlay`…`BuildScroller`) moved to a `PanelChrome` builder (`src/PanelChrome.cs`), which
+  returns the handles the controller drives; `PanelController` dropped 1136 → 590 lines, back under the
+  cap. Navigation, catalog selection, reset/persist and per-mod rendering stay in the controller;
+  header/footer/scroller were **not** fragmented into micro-files (reviewer + Codex agreed that's churn).
+- **P2 · Duplicated UI primitives — partly done (2026-08-22).** The panel's `NewText` + `Stretch` moved
+  to a shared `src/UiText.cs` (used by `PanelChrome` and `PanelController`). Still open: the dialogs'
+  own near-identical `Text(...)` TMP builder (written 3× across `ColorPicker`/`KeyCapture`/`ListEditor`)
+  could fold into `UiText` too. *(backlog)*
 - **P2 · `PauseMenu.DumpHierarchy`/`Describe`** (~70 lines) is debug tooling inside a fit/layout class
   — could move to a `HierarchyDebug` helper. *(backlog, optional)*
 - **Not debt (checked):** `Templates.cs` (546) is coherent — one job, many small tools; leave whole.
