@@ -22,7 +22,12 @@ A numeric setting with no `AcceptableValueRange` used to fall through to the fre
 Added `NumberEditor` (`src/NumberEditor.cs`, a `ModalDialog` subclass): a value display with ±fine/
 ±coarse nudge buttons (step scaled once to the value's magnitude — 2.5 nudges by 0.1, 5000 by 100), a
 Type… path via the game popup for far-off values, clamped to the numeric type's own min/max, saved as
-an invariant string through `SetSerializedValue`. **Why a dialog, not an inferred-range slider:** a
+an invariant string through `SetSerializedValue`. **The working value is a `decimal`, and nothing is
+written unless it's changed** — chosen after review caught that a `double` working value silently
+corrupted values (a `long` past 2^53, a `double` past six decimals, or a near-max `long`/`ulong` that
+`double` rounds out of range). `decimal` represents every integral type exactly and carries more
+precision than any `float`/`double` setting holds; the edited-guard means opening the editor and
+pressing Save leaves the setting byte-for-byte unchanged, even one too large to load into the editor. **Why a dialog, not an inferred-range slider:** a
 guessed 0…N ceiling is wrong the moment a value is meant to exceed it, and a slider can't represent
 negatives or very large numbers; nudge-and-type is honest about having no bounds while still beating a
 raw text box. **Why not just a numeric-validated popup:** it adds nothing over today beyond rejecting

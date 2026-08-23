@@ -62,6 +62,10 @@ control flow wants an in-game play-test on top of the build.
   `VerboseLogging` hierarchy tooling moved into `src/HierarchyDebug.cs` (`HierarchyDebug.Dump`); the
   caller in `PanelController` was repointed, and `PauseMenu` is now purely button-sourcing + panel-fit
   (280 → 204 lines). This clears the last documented structural item from the 2026-08-22 review.
+- [ ] **P3 — Fold the dialogs' button rows onto `ModalDialog.ButtonRow`.** A shared `ButtonRow` helper
+  now lives on `ModalDialog` and `NumberEditor` uses it, but `ColorPicker`/`KeyCapture`/`ListEditor`
+  still build their own near-identical button-row block (spacing 20, height 72). Convert the three to
+  the helper. Low value; only re-touch when next editing those dialogs.
 
 ## Capability (from README "Known limits")
 

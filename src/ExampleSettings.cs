@@ -67,10 +67,10 @@ namespace ModNook
             // ---- string sub-types Mod Nook detects ----
 
             config.Bind(Section, "AccentColour", "#4A2E8F",
-                "A hex-shaped string is auto-detected and opens the colour picker.");
+                "A hex-shaped value (#RRGGBB) is auto-detected on its own and opens the swatch editor.");
 
             config.Bind(Section, "AllowedTags", "alpha,beta,gamma",
-                "A comma-separated string is auto-detected and opens the list editor.");
+                "A comma-separated string is auto-detected and opens the row-per-entry editor.");
 
             config.Bind(Section, "MoonPhase", "DARK MOON",
                 "Prose choices, read from this line: DARK MOON, BLOOD VELVET or ROSE QUARTZ.");
@@ -84,12 +84,12 @@ namespace ModNook
 
             config.Bind(Section, "ThemeColour", "",
                 new ConfigDescription(
-                    "An empty string tagged ModNook.Color still opens the colour picker.",
+                    "A blank value forced to the swatch editor by its tag alone.",
                     null, "ModNook.Color"));
 
             config.Bind(Section, "Canvases", "one,two",
                 new ConfigDescription(
-                    "A ModNook.List tag forces the list editor even without the word comma.",
+                    "A ModNook.List tag forces the row-per-entry editor with no description hint.",
                     null, "ModNook.List"));
 
             config.Bind(Section, "InternalKey", true,

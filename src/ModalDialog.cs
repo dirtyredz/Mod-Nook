@@ -132,6 +132,30 @@ namespace ModNook
             return panel.transform;
         }
 
+        /// <summary>
+        /// A centered, evenly-spaced row to drop buttons into - the action bar every dialog lays out
+        /// the same way. Sized to one button-height by default.
+        /// </summary>
+        protected Transform ButtonRow(Transform parent, float height = 72f)
+        {
+            var row = new GameObject("Buttons", typeof(RectTransform), typeof(HorizontalLayoutGroup));
+            row.transform.SetParent(parent, false);
+
+            var layout = row.GetComponent<HorizontalLayoutGroup>();
+            layout.spacing = 20f;
+            layout.childAlignment = TextAnchor.MiddleCenter;
+            layout.childControlWidth = true;
+            layout.childForceExpandWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandHeight = false;
+
+            var element = row.AddComponent<LayoutElement>();
+            element.preferredHeight = height;
+            element.minHeight = height;
+
+            return row.transform;
+        }
+
         /// <summary>Builds the dialog's own contents. Runs with <see cref="Root"/> already set.</summary>
         protected abstract void Build();
 
