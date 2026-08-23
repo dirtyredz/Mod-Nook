@@ -70,7 +70,24 @@ namespace ModNook
         internal static PanelChrome Build(PauseScreen pauseScreen, Action onClose, Action onReset)
         {
             var chrome = new PanelChrome(pauseScreen, onClose, onReset);
-            chrome.BuildOverlay();
+
+            try
+            {
+                chrome.BuildOverlay();
+            }
+            catch
+            {
+                // A throw mid-construction would otherwise strand a half-built overlay: Build never
+                // returns, so the controller's `overlay` stays null and the next open builds another
+                // on top of it. Tear the partial down and rethrow, so a retry starts from clean.
+                if (chrome.Overlay != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(chrome.Overlay);
+                }
+
+                throw;
+            }
+
             return chrome;
         }
 

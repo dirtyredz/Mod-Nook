@@ -73,7 +73,8 @@ No file is currently over the ~800-line God-file cap. (⚠️ would mark one; se
 ## Where to find things
 
 - A setting renders wrong / new setting type → `Rows.cs` (`Build` dispatch) + `Templates.cs`.
-- Panel layout / sidebar / scrolling → `PanelController.cs` (`BuildBody`/`BuildScroller`).
+- Panel layout / sidebar / scrolling / header / footer → `PanelChrome.cs` (`BuildBody`/`BuildScroller`).
+- Panel navigation / per-mod content → `PanelController.cs` (`ShowMod`/`AddModButton`/`AddHeading`).
 - A cloned widget looks off (colour, wings, hover) → `Templates.cs` sanitizers.
 - Which mods/settings appear → `ModCatalog.cs`; tag behaviour → `Tags.cs`.
 - Cancel/Escape/gamepad behaviour → `Plugin.cs` patch + `PanelController.RequestBack`.
