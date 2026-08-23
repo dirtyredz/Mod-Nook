@@ -13,9 +13,9 @@ its responsibility split is complete; the **modal-dialog abstraction + close/bac
 (`src/OverlayContext.cs`, the static back-channel is gone); and the **`PanelChrome` split** — the
 once-per-overlay construction moved to `src/PanelChrome.cs`, dropping `PanelController` 1136 → 590
 lines, with the shared `NewText`/`Stretch` primitives lifted into `src/UiText.cs` (all 2026-08-22, see
-below). What remains structurally is finishing the UI-primitive dedupe (the dialogs' own `Text(...)`)
-and the optional `PauseMenu` debug-helper move. Anything touching dialog/overlay control flow wants an
-in-game play-test on top of the build.
+below); and the **UI-primitive dedupe** (`src/UiText.cs`, the dialogs' `Text(...)` folded in). The only
+structural item left is the optional `PauseMenu` debug-helper move. Anything touching dialog/overlay
+control flow wants an in-game play-test on top of the build.
 
 - [x] **P1 — Extract `SettingMetadata` from `Rows.cs`.** _Done 2026-08-22._ Moved the pure, UI-free
   metadata parsing (`Label`/`Humanise`/`ExplicitChoices`/`DescriptionChoices`/`SentenceContaining`/
@@ -53,10 +53,11 @@ in-game play-test on top of the build.
   Navigation, catalog selection, reset/persist and per-mod rendering stay in the controller, which
   dropped 1136 → 590 lines (under the cap). Header/footer/scroller were **not** fragmented into
   micro-files.
-- [ ] **P2 — Dedupe UI primitives.** _Partly done 2026-08-22:_ the panel's `NewText` + `Stretch` moved
-  to `src/UiText.cs` (shared by `PanelChrome` + `PanelController`). Still open: the dialogs' own
-  near-identical `Text(...)` TMP builder (written 3× across `ColorPicker`/`KeyCapture`/`ListEditor`)
-  could fold into `UiText`. Resolve the wrap-on inconsistency between the copies while doing it.
+- [x] **P2 — Dedupe UI primitives.** _Done 2026-08-22._ `NewText` + `Stretch` live in `src/UiText.cs`;
+  the dialogs' three near-identical private `Text(...)` builders were deleted and `ColorPicker`/
+  `KeyCapture`/`ListEditor` now call `UiText.NewText`. Every panel/dialog label goes through one
+  builder, so the wrap-on inconsistency is gone (uniform TMP default wrapping) — which also removed two
+  obsolete-`enableWordWrapping` warnings. Build verified.
 - [ ] **P2 — Move `PauseMenu.DumpHierarchy`/`Describe`** (~70 lines of debug tooling) out of the
   fit/layout class into a `HierarchyDebug` helper. Optional.
 

@@ -116,7 +116,7 @@ namespace ModNook
 
             Step("read", ReadCurrent);
 
-            Step("title", () => Text(panel.transform, SettingMetadata.Label(entry), 34f, Palette.Label));
+            Step("title", () => UiText.NewText(panel.transform, SettingMetadata.Label(entry), TextAlignmentOptions.Center, Palette.Label, 34f));
             Step("preview", () => BuildPreview(panel.transform));
             Step("palette", () => BuildPalette(panel.transform));
             Step("sliders", () => BuildSliders(panel.transform));
@@ -126,11 +126,11 @@ namespace ModNook
             // dialog the player cannot leave.
             Step("buttons", () => BuildButtons(panel.transform));
 
-            Step("footnote", () => Text(
+            Step("footnote", () => UiText.NewText(
                 panel.transform,
                 "Saved as a hex value, the same as the mod's own config file uses. Clear leaves the " +
                 "setting empty, which is what a mod reads as \"use my default\".",
-                20f, Palette.Muted));
+                TextAlignmentOptions.Center, Palette.Muted, 20f));
 
             LayoutRebuilder.ForceRebuildLayoutImmediate(panel);
             ClampToScreen(panel, hostRect);
@@ -210,7 +210,7 @@ namespace ModNook
             swatchElement.minWidth = 120f;
             swatchElement.flexibleWidth = 0f;
 
-            hexText = Text(row.transform, Hex(), 30f, Palette.Label);
+            hexText = UiText.NewText(row.transform, Hex(), TextAlignmentOptions.Center, Palette.Label, 30f);
             hexText.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1f;
         }
 
@@ -226,7 +226,7 @@ namespace ModNook
                 return;
             }
 
-            Text(parent, "The game's colours", 22f, Palette.Muted);
+            UiText.NewText(parent, "The game's colours", TextAlignmentOptions.Center, Palette.Muted, 22f);
 
             var grid = new GameObject("Palette", typeof(RectTransform), typeof(GridLayoutGroup));
             grid.transform.SetParent(parent, false);
@@ -466,7 +466,7 @@ namespace ModNook
             button.targetGraphic = image;
             button.onClick.AddListener(() => onClick());
 
-            var text = Text(host.transform, label, 28f, Palette.Label);
+            var text = UiText.NewText(host.transform, label, TextAlignmentOptions.Center, Palette.Label, 28f);
             var rect = (RectTransform)text.transform;
             rect.anchorMin = Vector2.zero;
             rect.anchorMax = Vector2.one;
@@ -488,23 +488,6 @@ namespace ModNook
         {
             onSave?.Invoke(string.Empty);
             Close();
-        }
-
-        private static TextMeshProUGUI Text(
-            Transform parent, string content, float size, Color colour)
-        {
-            var host = new GameObject("Text", typeof(RectTransform));
-            host.transform.SetParent(parent, false);
-
-            var text = host.AddComponent<TextMeshProUGUI>();
-            text.text = content;
-            text.alignment = TextAlignmentOptions.Center;
-            text.color = colour;
-            text.fontSize = size;
-            text.enableWordWrapping = true;
-            GameFonts.Apply(text, preferOutline: false);
-
-            return text;
         }
     }
 }

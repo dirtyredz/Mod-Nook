@@ -66,12 +66,12 @@ namespace ModNook
             var panel = (RectTransform)BuildShell(
                 760f, new RectOffset(48, 48, 36, 36), 14f, TextAnchor.MiddleCenter);
 
-            Text(panel.transform, Describe(entry.Definition.Key), 34f, Palette.Label);
+            UiText.NewText(panel.transform, Describe(entry.Definition.Key), TextAlignmentOptions.Center, Palette.Label, 34f);
 
-            currentText = Text(
-                panel.transform, $"Current: {entry.BoxedValue}", 28f, Palette.Muted);
+            currentText = UiText.NewText(
+                panel.transform, $"Current: {entry.BoxedValue}", TextAlignmentOptions.Center, Palette.Muted, 28f);
 
-            promptText = Text(panel.transform, "Press any key...", 30f, Palette.Label);
+            promptText = UiText.NewText(panel.transform, "Press any key...", TextAlignmentOptions.Center, Palette.Label, 30f);
 
             var buttons = new GameObject(
                 "Buttons", typeof(RectTransform), typeof(HorizontalLayoutGroup));
@@ -100,14 +100,14 @@ namespace ModNook
             // What the mod's description asks for is a key name typed into a field. Saying what
             // this does instead - and what it can and cannot store - saves a player wondering why
             // their Ctrl went missing.
-            Text(
+            UiText.NewText(
                 panel.transform,
                 entry.SettingType == typeof(KeyCode)
                     ? "This mod stores a single key, so Ctrl, Shift and Alt are not saved with it. " +
                       "Nothing is written until you press Save."
                     : "Hold Ctrl, Shift or Alt while pressing a key to include them. Press one on " +
                       "its own to bind just that key. Nothing is written until you press Save.",
-                20f, Palette.Muted);
+                TextAlignmentOptions.Center, Palette.Muted, 20f);
 
             LayoutRebuilder.ForceRebuildLayoutImmediate(panel);
             Listen();
@@ -230,23 +230,6 @@ namespace ModNook
         protected override void OnClosing()
         {
             onClosed?.Invoke();
-        }
-
-        private static TextMeshProUGUI Text(
-            Transform parent, string content, float size, Color colour)
-        {
-            var host = new GameObject("Text", typeof(RectTransform));
-            host.transform.SetParent(parent, false);
-
-            var text = host.AddComponent<TextMeshProUGUI>();
-            text.text = content;
-            text.alignment = TextAlignmentOptions.Center;
-            text.color = colour;
-            text.fontSize = size;
-            text.enableWordWrapping = true;
-            GameFonts.Apply(text, preferOutline: false);
-
-            return text;
         }
 
         /// <summary>Splits a config key on its camel case, matching the rest of the panel.</summary>

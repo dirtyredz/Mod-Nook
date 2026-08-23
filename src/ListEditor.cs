@@ -76,14 +76,14 @@ namespace ModNook
         {
             var panel = BuildShell(880f, new RectOffset(40, 40, 32, 32), 12f);
 
-            Text(panel, SettingMetadata.Label(entry), 34f, Palette.Label, TextAlignmentOptions.Center);
+            UiText.NewText(panel, SettingMetadata.Label(entry), TextAlignmentOptions.Center, Palette.Label, 34f);
 
             var description = entry.Description?.Description;
             if (!string.IsNullOrEmpty(description))
             {
-                Text(
-                    panel.transform, description.Split('\n')[0], 22f, Palette.Muted,
-                    TextAlignmentOptions.Center);
+                UiText.NewText(
+                    panel.transform, description.Split('\n')[0], TextAlignmentOptions.Center,
+                    Palette.Muted, 22f);
             }
 
             var list = new GameObject("Items", typeof(RectTransform), typeof(VerticalLayoutGroup));
@@ -98,9 +98,9 @@ namespace ModNook
 
             itemsHost = list.transform;
 
-            emptyNote = Text(
-                panel.transform, "Nothing in this list yet.", 24f, Palette.Muted,
-                TextAlignmentOptions.Center);
+            emptyNote = UiText.NewText(
+                panel.transform, "Nothing in this list yet.", TextAlignmentOptions.Center,
+                Palette.Muted, 24f);
 
             var buttons = new GameObject(
                 "Buttons", typeof(RectTransform), typeof(HorizontalLayoutGroup));
@@ -128,11 +128,11 @@ namespace ModNook
             // The mod's own description tells the player to write a comma-separated line, and this
             // dialog shows rows instead. Without saying why, that reads as the panel ignoring the
             // instructions right above it.
-            Text(
+            UiText.NewText(
                 panel.transform,
                 "This mod stores the setting as one comma-separated line. Add each entry on its " +
                 "own row and Mod Nook joins them when you save.",
-                20f, Palette.Muted, TextAlignmentOptions.Center);
+                TextAlignmentOptions.Center, Palette.Muted, 20f);
 
             Load();
             Refresh();
@@ -191,7 +191,7 @@ namespace ModNook
             element.preferredHeight = 56f;
             element.minHeight = 56f;
 
-            var text = Text(row.transform, item, 26f, Palette.Label, TextAlignmentOptions.MidlineLeft);
+            var text = UiText.NewText(row.transform, item, TextAlignmentOptions.MidlineLeft, Palette.Label, 26f);
             var textElement = text.gameObject.AddComponent<LayoutElement>();
             textElement.flexibleWidth = 1f;
 
@@ -249,23 +249,6 @@ namespace ModNook
         {
             onSave?.Invoke(string.Join(",", items.ToArray()));
             Close();
-        }
-
-        private static TextMeshProUGUI Text(
-            Transform parent, string content, float size, Color colour,
-            TextAlignmentOptions alignment)
-        {
-            var host = new GameObject("Text", typeof(RectTransform));
-            host.transform.SetParent(parent, false);
-
-            var text = host.AddComponent<TextMeshProUGUI>();
-            text.text = content;
-            text.alignment = alignment;
-            text.color = colour;
-            text.fontSize = size;
-            GameFonts.Apply(text, preferOutline: false);
-
-            return text;
         }
     }
 }
