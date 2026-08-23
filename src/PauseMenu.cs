@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Reflection;
 using Chicken.UI;
 using UnityEngine;
@@ -21,8 +20,6 @@ namespace ModNook
     {
         private static readonly FieldInfo SettingsButtonField =
             typeof(PauseScreen).GetField("settingsButton", BindingFlags.Instance | BindingFlags.NonPublic);
-
-        private static bool dumped;
 
         /// <summary>Breathing room kept above and below the buttons when no original is measurable.</summary>
         private const float MinimumMargin = 48f;
@@ -203,78 +200,5 @@ namespace ModNook
             rect.sizeDelta = new Vector2(rect.sizeDelta.x, rect.sizeDelta.y + amount);
         }
 
-        /// <summary>
-        /// One-off hierarchy dump. The pause screen's structure is not documented anywhere, and
-        /// this is what makes the resize above targetable rather than guessed at.
-        /// </summary>
-        internal static void DumpHierarchy(PauseScreen screen)
-        {
-            if (dumped || !ModNookPlugin.VerboseLogging.Value)
-            {
-                return;
-            }
-            dumped = true;
-
-            try
-            {
-                ModNookPlugin.Log.LogInfo("Pause screen hierarchy:");
-                Describe(screen.transform, 0);
-
-                // The game's Settings screen, for the header decorations and the Esc prompt in its
-                // bottom corner. Both are drawn by hand here; they should be clones.
-                var settings = UnityEngine.Object
-                    .FindObjectsOfType<SettingsMenuScreen>(true)
-                    .FirstOrDefault();
-
-                if (settings != null)
-                {
-                    ModNookPlugin.Log.LogInfo("Settings menu hierarchy:");
-                    Describe(settings.transform, 0);
-                }
-
-                // The decorated title bar is on the content screen, not the tab bar above it - the
-                // menu screen dump only reached the bumper icons.
-                var gameplay = UnityEngine.Object
-                    .FindObjectsOfType<SettingsGameplayScreen>(true)
-                    .FirstOrDefault();
-
-                if (gameplay != null)
-                {
-                    ModNookPlugin.Log.LogInfo("Settings content hierarchy:");
-                    Describe(gameplay.transform, 0);
-                }
-            }
-            catch (Exception e)
-            {
-                ModNookPlugin.Log.LogWarning($"Hierarchy dump failed: {e.Message}");
-            }
-        }
-
-        private static void Describe(Transform node, int depth)
-        {
-            // Deep enough to reach inside an individual button. The buttons themselves sit at
-            // depth 5, so anything shallower stops exactly above what needs looking at.
-            if (depth > 8)
-            {
-                return;
-            }
-
-            var rect = node as RectTransform;
-            var components = string.Join(
-                ", ",
-                node.GetComponents<Component>()
-                    .Where(c => c != null && !(c is RectTransform))
-                    .Select(c => c.GetType().Name)
-                    .ToArray());
-
-            ModNookPlugin.Log.LogInfo(
-                $"{new string(' ', depth * 2)}{node.name}  " +
-                $"[{(rect == null ? "no rect" : rect.rect.size.ToString("0"))}]  {components}");
-
-            for (var i = 0; i < node.childCount; i++)
-            {
-                Describe(node.GetChild(i), depth + 1);
-            }
-        }
     }
 }

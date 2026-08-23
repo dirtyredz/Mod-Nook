@@ -58,8 +58,10 @@ control flow wants an in-game play-test on top of the build.
   `KeyCapture`/`ListEditor` now call `UiText.NewText`. Every panel/dialog label goes through one
   builder, so the wrap-on inconsistency is gone (uniform TMP default wrapping) — which also removed two
   obsolete-`enableWordWrapping` warnings. Build verified.
-- [ ] **P2 — Move `PauseMenu.DumpHierarchy`/`Describe`** (~70 lines of debug tooling) out of the
-  fit/layout class into a `HierarchyDebug` helper. Optional.
+- [x] **P2 — Move `PauseMenu.DumpHierarchy`/`Describe`.** _Done 2026-08-22._ The ~70 lines of
+  `VerboseLogging` hierarchy tooling moved into `src/HierarchyDebug.cs` (`HierarchyDebug.Dump`); the
+  caller in `PanelController` was repointed, and `PauseMenu` is now purely button-sourcing + panel-fit
+  (280 → 204 lines). This clears the last documented structural item from the 2026-08-22 review.
 
 ## Capability (from README "Known limits")
 

@@ -13,7 +13,7 @@ one **Mod Nook** button to the pause menu; opening it draws a full-screen settin
 `ConfigEntry` definitions. Discovery is one-directional — no other mod references this assembly.
 
 Plugin source is flat in `src/*.cs` (no `src/ModNook/` nesting). One assembly, one namespace
-`ModNook`, ~5.6k lines across 19 files.
+`ModNook`, ~5.7k lines across 26 files.
 
 ## Architecture at a glance
 
@@ -44,7 +44,8 @@ PanelController  (the panel: overlay + sidebar + page)
 | **Modal dialogs** | `ModalDialog.cs` (170), `ColorPicker.cs` (493), `KeyCapture.cs` (256), `ListEditor.cs` (254) | `ModalDialog` base owns the one-at-a-time singleton lifecycle, the dim+centered-panel shell (`BuildShell`), Escape-close and the register-before-`Build` contract; the three subclasses (hex colour, key binding, comma-list) implement only their own `Build`. They no longer read anything off `Rows` — parent/template/overlay group arrive as call args from the `OverlayContext` — and build labels through the shared `UiText.NewText`. | ModalDialog, Templates, PanelSprite, UiText, Palette, SettingMetadata | A new editor kind (subclass `ModalDialog`) |
 | **Native popup adapters** | `TextPopupDialog.cs` (192), `Confirm.cs` (92), `PopupEscape.cs` (52) | `TextPopupDialog` opens the game's `TextInputPopupScreen` for free-form/text settings, borrowing and restoring the overlay's raycast blocker and the popup's "Name:" prefix; `Confirm` drives `GenericPopupScreen` for reset; `PopupEscape` arms Escape on the popup. Distinct shape from the custom build-your-own dialogs. | OverlayContext.Group, SettingMetadata, game screens | Text-popup borrow/restore |
 | **Widget templating** | `Templates.cs` (546), `BatWingFitter.cs` (89) | Find & cache the game's Cycle/Slider/Toggle/Button templates; clone; sanitize a clone (strip localization/decorations/hover-select/colour-freeze/bat-wings); relabel. `BatWingFitter` repositions wing ornaments a frame after layout. | game UI assemblies | Adjust how cloned widgets are tamed |
-| **Pause-menu integration** | `PauseMenu.cs` (280) | Source the pause button template, add ours, grow the pause panel to fit — plus a `VerboseLogging` hierarchy dump. | game PauseScreen | Button placement / fit |
+| **Pause-menu integration** | `PauseMenu.cs` (204) | Source the pause button template, add ours, grow the pause panel to fit. | game PauseScreen | Button placement / fit |
+| **Diagnostics** | `HierarchyDebug.cs` (88) | A one-off `VerboseLogging` dump of the pause + Settings screen hierarchies — the scaffolding the panel resize and the header/prompt clones were built against. Off unless `Diagnostics.VerboseLogging`. | game screens | Hierarchy logging |
 | **Catalog** | `ModCatalog.cs` (170), `Tags.cs` (46) | Discover loaded plugins that expose settings; group into `ModEntry`/`SectionEntry`; honour `ModNook.Hidden`. `Tags` reads the optional `ModNook.*` description tags. | BepInEx Chainloader | Discovery / tag vocabulary |
 | **Drawing & theming** | `PanelSprite.cs` (182), `GameFonts.cs` (178), `Palette.cs` (10), `Tooltip.cs` (184), `UiText.cs` (40) | Procedural sliced/circle sprites; find & apply the game font; shared colours; hover tooltip + `TooltipTrigger`; `UiText` is the shared TMP-label + full-parent-stretch pair used by the panel chrome and content. | game UI/TMP | Look & feel primitives |
 | **Corner prompt** | `InputPrompt.cs` (144), `PromptButton.cs` (128) | Register/withdraw the game's real corner **Close** prompt (drawing the player's bound key cap); build a prompt-style button when the real one is unavailable. | game input screens | Prompt bar |
@@ -112,8 +113,9 @@ Two safe relocations were fixed then (`Palette`, `Tags` → own files); the rest
   and the dialogs' three near-identical private `Text(...)` builders were deleted — `ColorPicker`/
   `KeyCapture`/`ListEditor` now call `UiText.NewText` too. The wrap-on inconsistency is gone (one
   builder, uniform TMP default wrapping), which also dropped two obsolete-`enableWordWrapping` warnings.
-- **P2 · `PauseMenu.DumpHierarchy`/`Describe`** (~70 lines) is debug tooling inside a fit/layout class
-  — could move to a `HierarchyDebug` helper. *(backlog, optional)*
+- **P2 · `PauseMenu.DumpHierarchy`/`Describe` — done (2026-08-22).** The ~70 lines of `VerboseLogging`
+  hierarchy tooling moved out of the fit/layout class into `src/HierarchyDebug.cs` (`HierarchyDebug.Dump`);
+  `PauseMenu` is now purely button-sourcing + panel-fit (280 → 204 lines).
 - **Not debt (checked):** `Templates.cs` (546) is coherent — one job, many small tools; leave whole.
   `ModEntry`/`SectionEntry` are fine colocated with `ModCatalog`. Setting-type dispatch in `Rows.Build`
   should stay explicit (no `ISettingRowProvider` registry — premature). `Confirm` should not join the

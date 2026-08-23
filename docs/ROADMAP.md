@@ -26,10 +26,11 @@ Pay down the debt recorded in [../STRUCTURE.md](../STRUCTURE.md) / [BACKLOG.md](
 independently reviewable and in-game-testable step at a time. **Done (2026-08-22):** the `Rows.cs`
 responsibility split (`SettingMetadata` + `TextPopupDialog`), the modal-dialog abstraction + close/back
 registry (`ModalDialog`), the overlay-context threading (`OverlayContext`, static back-channel removed),
-the `PanelChrome` split (`PanelController` 1136 → 590 lines), and the UI-primitive dedupe (`UiText`,
-with the dialogs' `Text(...)` folded in). No file is over the God-file cap now, and the documented
-structural debt is cleared. **Remaining (optional):** move `PauseMenu.DumpHierarchy`/`Describe` to a
-`HierarchyDebug` helper.
+the `PanelChrome` split (`PanelController` 1136 → 590 lines), the UI-primitive dedupe (`UiText`, with
+the dialogs' `Text(...)` folded in), and the `HierarchyDebug` extraction (`VerboseLogging` dump out of
+`PauseMenu`). No file is over the God-file cap, and **every documented structural item from the
+2026-08-22 review is now done** — Phase 3 is complete. Next work is Phase-2 WIP validation + release,
+or new capabilities (see [BACKLOG.md](BACKLOG.md)).
 
 ## 📋 Phase 4 — capability gaps (author-facing)
 

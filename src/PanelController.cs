@@ -84,7 +84,7 @@ namespace ModNook
                 return;
             }
 
-            PauseMenu.DumpHierarchy(screen);
+            HierarchyDebug.Dump(screen);
             nookButton = PauseMenu.AddButton(screen, ModNookPlugin.PluginName, Open);
             StartCoroutine(FitWhenSettled());
         }
