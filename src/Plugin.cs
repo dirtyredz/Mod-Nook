@@ -42,6 +42,10 @@ namespace ModNook
                 "Diagnostics", "VerboseLogging", false,
                 "Log the pause and settings screen hierarchies at startup.");
 
+            // A live gallery of every render path, on Mod Nook's own page. Inert demo values; also
+            // the manual-test surface, so every widget/dialog/tag is reachable without another mod.
+            ExampleSettings.Bind(Config);
+
             try
             {
                 var harmony = new Harmony(PluginGuid);

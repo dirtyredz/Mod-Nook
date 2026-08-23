@@ -274,6 +274,21 @@ namespace ModNook
                 return;
             }
 
+            // A number with no range gets nudge-and-type instead of a raw text box.
+            if (NumberEditor.Suits(entry) && overlay?.Root != null)
+            {
+                button.onClick.AddListener(() =>
+                {
+                    Tooltip.Hide();
+
+                    NumberEditor.Open(
+                        overlay.Root, entry, overlay.ButtonTemplate, overlay.Group,
+                        text => Apply(entry, value, text, onChanged));
+                });
+
+                return;
+            }
+
             button.onClick.AddListener(() => TextPopupDialog.Edit(entry, value, overlay?.Group, onChanged));
         }
 

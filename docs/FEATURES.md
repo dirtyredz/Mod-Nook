@@ -13,6 +13,8 @@ What Mod Nook does. Status: ✅ shipped (in 1.0.0) · 🧪 committed, unreleased
 - ✅ `enum` → `CycleButton` (humanised names).
 - ✅ `AcceptableValueList` / `ModNook.Values=a|b|c` → `CycleButton`.
 - ✅ Bounded number (`AcceptableValueRange`) → `SliderButton` with a sensible step (`NiceStep`).
+- 🧪 Unbounded number (numeric type, no range) → number editor dialog: ±fine/±coarse nudge buttons
+  (step scaled to the value's magnitude) + a Type… direct-entry path, clamped to the type's own limits.
 - ✅ `KeyboardShortcut` / `KeyCode` → key-capture dialog (checked before enum so a `KeyCode` isn't a
   full-keyboard cycle).
 - ✅ Hex-colour `string` → colour picker with a palette from the game's `ColorLibrary` + RGBA sliders.
@@ -39,6 +41,8 @@ What Mod Nook does. Status: ✅ shipped (in 1.0.0) · 🧪 committed, unreleased
 - 🧪 Proton/Linux overlay-parenting fix (`includeInactive` canvas lookup).
 
 ## Diagnostics
+- 🧪 Built-in **Examples** section on Mod Nook's own page — one inert setting per render path (every
+  widget, dialog, and `ModNook.*` tag), as a live gallery and manual-test surface.
 - ✅ `Diagnostics.VerboseLogging` dumps the pause and settings hierarchies at startup.
 - ✅ Every patch and per-row build is exception-contained so a bad setting never takes down the pause menu.
 

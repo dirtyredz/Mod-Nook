@@ -241,7 +241,7 @@ namespace ModNook
             return value.Length <= 40 ? value : value.Substring(0, 37) + "...";
         }
 
-        private static bool IsNumeric(Type type)
+        internal static bool IsNumeric(Type type)
         {
             return type == typeof(float) || type == typeof(double) || type == typeof(decimal) ||
                    IsIntegral(type);

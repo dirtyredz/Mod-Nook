@@ -3,6 +3,33 @@
 Decisions worth not re-litigating. Newest first. Rationale is drawn from the code, README, and git
 history; where a rationale is inferred rather than recorded, it says so.
 
+## 2026-08-22 — Ship a built-in Examples section as a live gallery + test surface
+
+`ExampleSettings.Bind` adds an always-on **Examples** section to Mod Nook's own config: one inert
+setting per render path (toggle, cycle, both slider bounds, the number editor, key capture, colour,
+list, text popup, prose choices, and each `ModNook.*` tag incl. a `Hidden` one that must not appear).
+Because Mod Nook lists its own config like any other mod, this shows on its own page. **Why:** the
+render paths were previously only testable if some installed mod happened to exercise them (e.g. an
+unbounded number needs a mod that binds one) — this makes every path reachable in one place, always,
+and doubles as authors' reference for what a given `Config.Bind`/tag produces. **Always-on, not
+gated:** chosen deliberately (over a toggle or a debug-only build) so the gallery is a permanent,
+zero-setup reference; the values are inert and confined to one clearly-labelled section. Lives in its
+own file, not `Plugin.cs`, to keep the entry point to binding-its-own-config + patches.
+
+## 2026-08-22 — Unbounded numbers get a nudge-and-type dialog, not an inferred range
+
+A numeric setting with no `AcceptableValueRange` used to fall through to the free-form text popup.
+Added `NumberEditor` (`src/NumberEditor.cs`, a `ModalDialog` subclass): a value display with ±fine/
+±coarse nudge buttons (step scaled once to the value's magnitude — 2.5 nudges by 0.1, 5000 by 100), a
+Type… path via the game popup for far-off values, clamped to the numeric type's own min/max, saved as
+an invariant string through `SetSerializedValue`. **Why a dialog, not an inferred-range slider:** a
+guessed 0…N ceiling is wrong the moment a value is meant to exceed it, and a slider can't represent
+negatives or very large numbers; nudge-and-type is honest about having no bounds while still beating a
+raw text box. **Why not just a numeric-validated popup:** it adds nothing over today beyond rejecting
+non-numbers (which `SetSerializedValue` already does) — no stepping. Reuses the `ModalDialog` base and
+routes from `Rows.BuildText` (via `NumberEditor.Suits`) ahead of the text-popup fallback. `Confirm`
+and the bounded-slider path are untouched.
+
 ## 2026-08-22 — Split `PanelChrome` out of `PanelController`; share `UiText`
 
 Moved the once-per-overlay chrome construction (`EnsureOverlay` and its `AddBackdrop`/`BuildPanel`/

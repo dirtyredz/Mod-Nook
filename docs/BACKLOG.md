@@ -67,8 +67,11 @@ control flow wants an in-game play-test on top of the build.
 
 - [ ] **P2 — Two-field rows for `Name=Value` pair lists** (`Area scales`-style) — a label + a slider
   for the number, instead of editing the whole `Name=Value` string.
-- [ ] **P2 — Better unbounded-number handling** — numbers with no `AcceptableValueRange` fall back to a
-  text field; consider an inferred range or a numeric popup.
+- [x] **P2 — Better unbounded-number handling.** _Done 2026-08-22 (pending in-game test)._ A number with
+  no `AcceptableValueRange` now opens `NumberEditor` (`src/NumberEditor.cs`, a `ModalDialog`) instead of
+  the raw text popup: ±fine/±coarse nudge buttons (step scaled to the value's magnitude), a Type…
+  direct-entry path, clamped to the numeric type's own limits, saved via `SetSerializedValue`. Chose a
+  dialog over an inferred-range slider (no invented bounds) — see DECISIONS.
 - [ ] **P2 — Optional per-setting reset / undo** — reset is per-mod only and destructive once written.
 
 ## Release hygiene
