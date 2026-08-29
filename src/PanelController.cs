@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,7 +26,7 @@ namespace ModNook
 
         private PauseScreen pauseScreen;
         private AnimatedButton nookButton;
-        
+
         private GameObject resetButton;
 
         private GameObject overlay;
