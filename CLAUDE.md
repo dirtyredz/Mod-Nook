@@ -19,7 +19,13 @@ definitions. Discovery is one-directional: nothing references this assembly.
 ## Conventions
 
 - **Commit identity:** `dirtyredz <dirtyredz@live.com>` (never the work email).
-- Plugin `.cs` flat in `src/` (no `src/ModNook/`). One namespace `ModNook`, `internal` by default.
+- **Layout is enforced:** `src/Plugin.cs` (entry point) plus `src/game/` (live-game bridges +
+  patches), `src/ui/chrome/` (the panel frame and its reusable furniture), `src/ui/dialogs/` (modal
+  surfaces and per-setting editors), `src/core/` (discovery, config interpretation, diagnostics).
+  `src/ui/` itself holds ONLY the two vendored primitives (`PanelSprite.cs`, `Palette.cs`), whose
+  paths are locked by the byte-sync with sibling mods — new UI goes in `chrome/` or `dialogs/`.
+  See STRUCTURE.md `## Layout`. Folders are cosmetic to the compiler — one flat
+  namespace `ModNook` everywhere, `internal` by default; never change a namespace when moving a file.
 - **Versioning:** bump `<Version>` in `src/ModNook.csproj` only, only when publishing; it flows to
   `[BepInPlugin]` via `ModBuildInfo.Version`. Never hardcode a version in `Plugin.cs`.
 - **Synced canonicals — do not edit here:** `Directory.Build.props`, `pack.ps1` (from
