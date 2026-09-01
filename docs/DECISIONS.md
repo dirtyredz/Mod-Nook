@@ -19,7 +19,7 @@ own file, not `Plugin.cs`, to keep the entry point to binding-its-own-config + p
 ## 2026-08-22 — Unbounded numbers get a nudge-and-type dialog, not an inferred range
 
 A numeric setting with no `AcceptableValueRange` used to fall through to the free-form text popup.
-Added `NumberEditor` (`src/NumberEditor.cs`, a `ModalDialog` subclass): a value display with ±fine/
+Added `NumberEditor` (`src/ui/dialogs/NumberEditor.cs`, a `ModalDialog` subclass): a value display with ±fine/
 ±coarse nudge buttons (step scaled once to the value's magnitude — 2.5 nudges by 0.1, 5000 by 100), a
 Type… path via the game popup for far-off values, clamped to the numeric type's own min/max, saved as
 an invariant string through `SetSerializedValue`. **The working value is a `decimal`, and nothing is
@@ -39,7 +39,7 @@ and the bounded-slider path are untouched.
 
 Moved the once-per-overlay chrome construction (`EnsureOverlay` and its `AddBackdrop`/`BuildPanel`/
 `BuildHeader`/`CloneSettingsHeader`/`BuildFooter`/`BuildBody`/`BuildScroller` helpers) into a new
-`src/PanelChrome.cs` builder. `PanelChrome.Build(pauseScreen, onClose, onReset)` builds everything and
+`src/ui/chrome/PanelChrome.cs` builder. `PanelChrome.Build(pauseScreen, onClose, onReset)` builds everything and
 returns the handles the controller drives (`Overlay`/`Context`/`Content`/`Sidebar`/`Title`/
 `ResetButton`/`UsingGamePrompt`); `PanelController.EnsureOverlay` shrank to delegating + unpacking those
 into its existing fields. `PanelController` went 1136 → 590 lines, back under the ~800 God-file cap.
@@ -50,7 +50,7 @@ blast radius, so the navigation/content code is untouched; the footer's Reset/Cl
 `Action`s rather than the chrome knowing the controller. **Rejected:** fragmenting header/footer/
 scroller/heading into their own micro-files — the prior full review + Codex agreed that's churn, not
 clarity; and pushing the whole `OverlayContext` into every dialog (kept from the overlay-context ADR).
-The two shared UI primitives `NewText` + `Stretch` moved to `src/UiText.cs` (a neutral home both the
+The two shared UI primitives `NewText` + `Stretch` moved to `src/ui/chrome/UiText.cs` (a neutral home both the
 chrome and the controller's content use), which also starts the separate UI-primitive dedupe. No
 behaviour change; Release build verified and play-tested (open, mod list, per-mod pages, scrolling,
 dialogs, reset, Close/Esc).
@@ -58,7 +58,7 @@ dialogs, reset, Close/Esc).
 ## 2026-08-22 — Thread an explicit `OverlayContext`; drop the `Rows` overlay statics
 
 Replaced the public mutable statics `Rows.OverlayRoot`/`OverlayGroup`/`ButtonTemplate` with a small
-`OverlayContext` (`src/OverlayContext.cs`) that `PanelController` builds once per overlay and threads
+`OverlayContext` (`src/ui/chrome/OverlayContext.cs`) that `PanelController` builds once per overlay and threads
 into `Rows.Build`/`BuildText`; `Rows` hands `Root`/`ButtonTemplate` to the colour/key/list dialogs and
 the overlay `Group` to `TextPopupDialog`, `ListEditor` and `Confirm.Ask`. **Why:** the statics were a
 back-channel — set in one class, read deep in three others — that hid the panel→dialog dependency and

@@ -1,4 +1,4 @@
-// Copied from mods/PlantPeek/src/PanelSprite.cs, namespace aside. See 10-visual-integration.md.
+// Copied from mods/PlantPeek/src/ui/PanelSprite.cs, namespace aside. See 10-visual-integration.md.
 // Fix bugs in both copies.
 using UnityEngine;
 

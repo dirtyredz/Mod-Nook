@@ -22,8 +22,10 @@ definitions. Discovery is one-directional: nothing references this assembly.
 - **Layout is enforced:** `src/Plugin.cs` (entry point) plus `src/game/` (live-game bridges +
   patches), `src/ui/chrome/` (the panel frame and its reusable furniture), `src/ui/dialogs/` (modal
   surfaces and per-setting editors), `src/core/` (discovery, config interpretation, diagnostics).
-  `src/ui/` itself holds ONLY the two vendored primitives (`PanelSprite.cs`, `Palette.cs`), whose
-  paths are locked by the byte-sync with sibling mods — new UI goes in `chrome/` or `dialogs/`.
+  `src/ui/` itself holds ONLY the two ported primitives (`PanelSprite.cs`, `Palette.cs`), kept there
+  so their path matches the sibling mods that carry a port of the same file — a convenience for
+  diffing/porting, NOT a sync guarantee (the copies have diverged; `sync-mod-files.ps1` only ever
+  syncs `pack.ps1` and `Directory.Build.props`). New UI goes in `chrome/` or `dialogs/`.
   See STRUCTURE.md `## Layout`. Folders are cosmetic to the compiler — one flat
   namespace `ModNook` everywhere, `internal` by default; never change a namespace when moving a file.
 - **Versioning:** bump `<Version>` in `src/ModNook.csproj` only, only when publishing; it flows to

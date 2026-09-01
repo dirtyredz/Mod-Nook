@@ -1,4 +1,4 @@
-// Copied verbatim from mods/LastSwing/src/GameFonts.cs, namespace aside.
+// Copied verbatim from mods/LastSwing/src/game/GameFonts.cs, namespace aside.
 // Shared look-and-feel: see 10-visual-integration.md. Fix bugs in both copies.
 using System;
 using TMPro;
