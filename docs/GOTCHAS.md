@@ -74,4 +74,8 @@ the game's own live UI; the code comments are the source of truth, this is the i
   description is otherwise indistinguishable from a real enumeration. → It only fires when the
   setting's current value is one of the parsed tokens, tokens are short, unique, and 2–12 in number.
 
+- **P2 — Robustness of the cancel hook** — it depends on the game's action ids (33, 21); a game
+  update could change them. Failure is logged and non-fatal, but worth a periodic re-check.
+- Anything touching dialog/overlay control flow wants an in-game play-test on top of the build.
+
 _Living doc — refresh with /project-docs when it drifts._
