@@ -79,3 +79,5 @@ the game's own live UI; the code comments are the source of truth, this is the i
 - Anything touching dialog/overlay control flow wants an in-game play-test on top of the build.
 
 _Living doc — refresh with /project-docs when it drifts._
+
+- **1.3.9 compatibility (2026-10-12):** The Reset prompt reflected a nonexistent field `inputIconWidget`; the real field is `InputButtonListWidget.inputButtonIconListWidget` (pre-existing bug, now fixed and logged when missing). Always delete `src/bin` and `src/obj` before rebuilding after a game update - a plain build reuses stale IL. Runtime-unverified until play-tested.

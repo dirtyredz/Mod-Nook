@@ -25,7 +25,7 @@ namespace ModNook
     {
         private static readonly FieldInfo IconField =
             typeof(InputButtonListWidget).GetField(
-                "inputIconWidget", BindingFlags.Instance | BindingFlags.NonPublic);
+                "inputButtonIconListWidget", BindingFlags.Instance | BindingFlags.NonPublic);
 
         private static readonly FieldInfo TextField =
             typeof(InputButtonListWidget).GetField(
@@ -52,6 +52,11 @@ namespace ModNook
                 var clone = Templates.CloneInactive(source, "ModNook_Prompt");
 
                 // Read the widget's own references before the component that owns them is removed.
+                if (IconField == null)
+                {
+                    ModNookPlugin.Log.LogWarning("InputButtonListWidget.inputButtonIconListWidget not found - prompt key icon will stay visible.");
+                }
+
                 var icon = IconField?.GetValue(clone) as Component;
                 var text = TextField?.GetValue(clone) as Component;
 
