@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.1
+
+Compatibility with Moonlight Peaks 1.3.9.
+
+- Fixed the Reset button's prompt showing a stray key icon: the game renamed the field Mod Nook used to hide it.
+- Includes everything from 1.1.0.
+
 ## 1.1.0
 
 New editors and reach, plus a built-in reference — all still read-only against other mods' configs,
